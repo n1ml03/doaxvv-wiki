@@ -42,8 +42,11 @@ Thumbs.db
 
 # Documentation (not needed for production)
 docs
+
+# Ignore markdown files except content data (guides, tools)
 *.md
 !README.md
+!src/content/data/**/*.md
 
 # Lock files (Vercel uses npm)
 bun.lockb
