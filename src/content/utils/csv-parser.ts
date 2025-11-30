@@ -119,4 +119,13 @@ export function parseDate(value: string): Date | null {
   return isNaN(date.getTime()) ? null : date;
 }
 
+/**
+ * Check if a string looks like an ISO 8601 date format
+ * Matches formats like: 2024-01-15, 2024-01-15T10:30:00, 2024-01-15T10:30:00.000Z
+ */
+export function looksLikeISODate(value: string): boolean {
+  // Match ISO 8601 date formats
+  return /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/.test(value);
+}
+
 

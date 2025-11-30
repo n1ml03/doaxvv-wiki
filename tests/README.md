@@ -22,7 +22,6 @@ tests/
 │   ├── utils/
 │   │   ├── csv-parser.test.ts          # CSV parsing utilities
 │   │   ├── csv-serializer.test.ts      # CSV serialization
-│   │   ├── json-serializer.test.ts     # JSON serialization
 │   │   ├── markdown-loader.test.ts     # Markdown loading
 │   │   └── validator.test.ts           # Content validation
 │   └── loader.test.ts                  # Content loader singleton
@@ -148,9 +147,8 @@ npm test -- --grep "localization"
 - ✅ 404 handling
 - ✅ Nested routes
 
-### Content Utilities (94 tests)
+### Content Utilities (tests)
 - ✅ CSV parsing và serialization
-- ✅ JSON serialization
 - ✅ Markdown loading
 - ✅ Content validation
 

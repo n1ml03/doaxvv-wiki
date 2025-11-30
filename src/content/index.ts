@@ -2,9 +2,9 @@
  * Content Management System - Main Export
  */
 
-// Loader (with built-in lazy loading, caching, and request deduplication)
+// Loader (with built-in lazy loading, LRU caching, and request deduplication)
 export { contentLoader, ContentLoader, ContentLoadError } from './loader';
-export type { ContentType } from './loader';
+export type { ContentType, ContentLoaderConfig } from './loader';
 
 // Schemas
 export type {
@@ -53,10 +53,6 @@ export { ContentValidator } from './utils/validator';
 export type { ValidationResult } from './utils/validator';
 
 export { RequestDeduplicator } from './utils/request-deduplicator';
-export { ContentCache } from './utils/content-cache';
-
-export { serializeContent, deserializeContent } from './utils/json-serializer';
-export type { SerializableContent } from './utils/json-serializer';
 
 // Image loading utilities
 export {
@@ -112,3 +108,26 @@ export {
   hasMarkdownContent,
 } from './utils/markdown-loader';
 export type { MarkdownSection, MarkdownLoaderConfig } from './utils/markdown-loader';
+
+// Performance utilities for large datasets
+export {
+  LRUCache,
+  IndexedDBCache,
+  parseCSVChunked,
+  paginate,
+  createPaginatedAccessor,
+  getVirtualListItems,
+  batchProcess,
+  createDebouncedSearch,
+  lruCache,
+  idbCache,
+} from './utils/performance';
+export type {
+  CacheEntry,
+  CacheStats,
+  CacheOptions,
+  ChunkProgress,
+  ChunkOptions,
+  PaginatedResult,
+  VirtualListResult,
+} from './utils/performance';

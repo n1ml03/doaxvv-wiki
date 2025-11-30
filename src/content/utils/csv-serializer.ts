@@ -6,6 +6,7 @@
 
 import type { LocalizedString, LanguageCode } from '../../shared/types/localization';
 import { SUPPORTED_LANGUAGES } from '../../shared/types/localization';
+import { parseArray, parseJSON, parseDate, parseBoolean, parseNumber, looksLikeISODate } from './csv-parser';
 
 export interface SerializeOptions {
   delimiter?: string;
@@ -330,6 +331,7 @@ export class CSVSerializer {
 
   /**
    * Deserialize a single value based on its content and field configuration
+   * Uses shared utilities from csv-parser.ts for type conversion
    */
   private deserializeValue(value: string, fieldName: string): any {
     if (value === '') {
@@ -338,32 +340,32 @@ export class CSVSerializer {
 
     // Check if this is a date field
     if (this.deserializeOptions.dateFields.includes(fieldName)) {
-      return this.parseDate(value);
+      return parseDate(value);
     }
 
     // Check if this is a JSON field
     if (this.deserializeOptions.jsonFields.includes(fieldName)) {
-      return this.parseJSON(value);
+      return parseJSON(value);
     }
 
     // Check if this is an array field (pipe-separated)
     if (this.deserializeOptions.arrayFields.includes(fieldName)) {
-      return this.parseArray(value);
+      return parseArray(value);
     }
 
     // Auto-detect types based on content
     // Try to parse as JSON if it looks like JSON
     if ((value.startsWith('{') && value.endsWith('}')) || 
         (value.startsWith('[') && value.endsWith(']'))) {
-      const parsed = this.parseJSON(value);
+      const parsed = parseJSON(value);
       if (parsed !== null) {
         return parsed;
       }
     }
 
     // Try to parse as date if it looks like ISO date
-    if (this.looksLikeISODate(value)) {
-      const date = this.parseDate(value);
+    if (looksLikeISODate(value)) {
+      const date = parseDate(value);
       if (date !== null) {
         return date;
       }
@@ -371,65 +373,24 @@ export class CSVSerializer {
 
     // Check for pipe-separated values
     if (value.includes('|')) {
-      return this.parseArray(value);
+      return parseArray(value);
     }
 
     // Check for boolean
     if (value.toLowerCase() === 'true' || value.toLowerCase() === 'false') {
-      return value.toLowerCase() === 'true';
+      return parseBoolean(value);
     }
 
     // Check for number
     if (/^-?\d+(\.\d+)?$/.test(value)) {
-      return parseFloat(value);
+      const num = parseNumber(value);
+      return num !== null ? num : value;
     }
 
     // Return as string
     return value;
   }
 
-  /**
-   * Check if a string looks like an ISO date
-   */
-  private looksLikeISODate(value: string): boolean {
-    // Match ISO 8601 date formats
-    return /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/.test(value);
-  }
-
-  /**
-   * Parse a pipe-separated string into an array
-   */
-  private parseArray(value: string): string[] {
-    if (!value || value.trim() === '') {
-      return [];
-    }
-    return value.split('|').map(v => v.trim()).filter(Boolean);
-  }
-
-  /**
-   * Parse a JSON string
-   */
-  private parseJSON(value: string): any {
-    if (!value || value.trim() === '') {
-      return null;
-    }
-    try {
-      return JSON.parse(value);
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * Parse a date string
-   */
-  private parseDate(value: string): Date | null {
-    if (!value || value.trim() === '') {
-      return null;
-    }
-    const date = new Date(value);
-    return isNaN(date.getTime()) ? null : date;
-  }
 }
 
 /**

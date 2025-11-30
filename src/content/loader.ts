@@ -8,8 +8,61 @@
  */
 
 import { parseCSV } from './utils/csv-parser';
+import { 
+  LRUCache, 
+  IndexedDBCache,
+  parseCSVChunked, 
+  paginate, 
+  createPaginatedAccessor,
+  getVirtualListItems,
+  batchProcess,
+  createDebouncedSearch,
+  type CacheStats,
+  type PaginatedResult,
+  type VirtualListResult,
+  type ChunkProgress,
+} from './utils/performance';
 import type { Guide, Character, Event, Festival, Gacha, Swimsuit, Item, Episode, Category, Tag, Tool, BaseContent, SwimsuitSkill } from './schemas/content.schema';
 import type { LocalizedString } from '../shared/types/localization';
+
+/**
+ * Configuration for ContentLoader performance tuning
+ */
+export interface ContentLoaderConfig {
+  /** Enable LRU cache with TTL (default: true) */
+  useLRUCache?: boolean;
+  /** Cache TTL in milliseconds (default: 10 minutes) */
+  cacheTTL?: number;
+  /** Max cache entries (default: 50) */
+  maxCacheEntries?: number;
+  /** Max cache memory in bytes (default: 100MB) */
+  maxCacheMemory?: number;
+  /** Use chunked parsing for large files (default: true for >5000 rows) */
+  useChunkedParsing?: boolean;
+  /** Chunk size for parsing (default: 1000) */
+  chunkSize?: number;
+  /** Enable debug logging (default: false) */
+  debug?: boolean;
+  /** Enable IndexedDB persistence for large datasets (default: false) */
+  useIndexedDB?: boolean;
+  /** IndexedDB TTL in milliseconds (default: 24 hours) */
+  idbTTL?: number;
+  /** Progress callback for chunked parsing */
+  onParseProgress?: (contentType: string, progress: ChunkProgress) => void;
+}
+
+const DEFAULT_CONFIG: Required<ContentLoaderConfig> = {
+  useLRUCache: true,
+  cacheTTL: 10 * 60 * 1000, // 10 minutes
+  maxCacheEntries: 50,
+  maxCacheMemory: 100 * 1024 * 1024, // 100MB
+  useChunkedParsing: true,
+  chunkSize: 1000,
+  debug: false,
+  useIndexedDB: false,
+  idbTTL: 24 * 60 * 60 * 1000, // 24 hours
+  onParseProgress: undefined as unknown as (contentType: string, progress: ChunkProgress) => void,
+};
 
 // Re-export Festival type for lookup map
 type FestivalType = Festival;
@@ -371,15 +424,20 @@ export class ContentLoadError extends Error {
  * 
  * Features:
  * - Lazy loading: Content is only loaded when first requested
- * - Caching: Parsed content is cached to prevent redundant parsing
+ * - LRU Caching: Memory-bounded cache with TTL and automatic eviction
  * - Request deduplication: Concurrent requests for the same content share a single parse operation
- * - Direct PapaParse integration: Uses parseCSV for efficient CSV parsing
+ * - Chunked parsing: Non-blocking parsing for large datasets
  * - O(1) Lookup Maps: Pre-built indexes for fast access by ID and unique_key
  */
 export class ContentLoader {
   private static instance: ContentLoader;
-  private cache: Map<string, any[]> = new Map();
-  private pendingRequests: Map<string, Promise<any[]>> = new Map();
+  private config: Required<ContentLoaderConfig>;
+  private lruCache: LRUCache<unknown[]>;
+  private idbCache: IndexedDBCache<unknown[]> | null = null;
+  private simpleCache: Map<string, unknown[]> = new Map(); // Fallback for non-LRU mode
+  private pendingRequests: Map<string, Promise<unknown[]>> = new Map();
+  private parseMetrics: Map<string, { parseTime: number; rowCount: number }> = new Map();
+  private searchInstances: Map<string, ReturnType<typeof createDebouncedSearch<BaseContent>>> = new Map();
   
   // O(1) Lookup Maps for fast access
   private charactersByKey: Map<string, Character> = new Map();
@@ -402,13 +460,22 @@ export class ContentLoader {
   private toolsByKey: Map<string, Tool> = new Map();
   private toolsByIndex: Map<number, Tool> = new Map();
 
-  private constructor() {
-    // Private constructor for singleton pattern
+  private constructor(config: ContentLoaderConfig = {}) {
+    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.lruCache = new LRUCache<unknown[]>({
+      maxEntries: this.config.maxCacheEntries,
+      maxMemorySize: this.config.maxCacheMemory,
+      ttl: this.config.cacheTTL,
+      persistToStorage: false,
+    });
+    if (this.config.useIndexedDB) {
+      this.idbCache = new IndexedDBCache<unknown[]>('content-loader-db', 'content', '1.0.0', this.config.idbTTL);
+    }
   }
 
-  static getInstance(): ContentLoader {
+  static getInstance(config?: ContentLoaderConfig): ContentLoader {
     if (!ContentLoader.instance) {
-      ContentLoader.instance = new ContentLoader();
+      ContentLoader.instance = new ContentLoader(config);
     }
     return ContentLoader.instance;
   }
@@ -417,38 +484,126 @@ export class ContentLoader {
    * Reset the singleton instance (useful for testing)
    */
   static resetInstance(): void {
-    ContentLoader.instance = undefined as any;
+    ContentLoader.instance = undefined as unknown as ContentLoader;
+  }
+
+  /**
+   * Update configuration at runtime
+   */
+  configure(config: Partial<ContentLoaderConfig>): void {
+    this.config = { ...this.config, ...config };
+    // Recreate LRU cache with new settings
+    if (config.maxCacheEntries || config.maxCacheMemory || config.cacheTTL) {
+      const oldStats = this.lruCache.getStats();
+      this.lruCache = new LRUCache<unknown[]>({
+        maxEntries: this.config.maxCacheEntries,
+        maxMemorySize: this.config.maxCacheMemory,
+        ttl: this.config.cacheTTL,
+      });
+      if (this.config.debug) {
+        console.log('[ContentLoader] Cache reconfigured, old stats:', oldStats);
+      }
+    }
+    // Handle IndexedDB config changes
+    if (config.useIndexedDB !== undefined) {
+      if (config.useIndexedDB && !this.idbCache) {
+        this.idbCache = new IndexedDBCache<unknown[]>('content-loader-db', 'content', '1.0.0', this.config.idbTTL);
+      } else if (!config.useIndexedDB && this.idbCache) {
+        this.idbCache.close();
+        this.idbCache = null;
+      }
+    }
   }
 
   /**
    * Check if the cache is empty (useful for testing lazy loading)
    */
   isCacheEmpty(): boolean {
-    return this.cache.size === 0;
+    return this.config.useLRUCache 
+      ? this.lruCache.getStats().entryCount === 0
+      : this.simpleCache.size === 0;
   }
 
   /**
    * Get the number of cached content types
    */
   getCacheSize(): number {
-    return this.cache.size;
+    return this.config.useLRUCache 
+      ? this.lruCache.getStats().entryCount
+      : this.simpleCache.size;
+  }
+
+  /**
+   * Get cache statistics for monitoring
+   */
+  getCacheStats(): CacheStats {
+    return this.lruCache.getStats();
+  }
+
+  /**
+   * Get parse metrics for performance monitoring
+   */
+  getParseMetrics(): Map<string, { parseTime: number; rowCount: number }> {
+    return new Map(this.parseMetrics);
+  }
+
+  /**
+   * Get cached data if available (sync - memory only)
+   */
+  private getCached<T>(key: string): T[] | undefined {
+    if (this.config.useLRUCache) {
+      return this.lruCache.get(key) as T[] | undefined;
+    }
+    return this.simpleCache.get(key) as T[] | undefined;
+  }
+
+  /**
+   * Get cached data with IndexedDB fallback (async)
+   */
+  private async getCachedAsync<T>(key: string): Promise<T[] | undefined> {
+    // Try memory cache first
+    const memCached = this.getCached<T>(key);
+    if (memCached) return memCached;
+    
+    // Try IndexedDB if enabled
+    if (this.idbCache) {
+      const idbData = await this.idbCache.get(key) as T[] | undefined;
+      if (idbData) {
+        this.setCache(key, idbData); // Populate memory cache
+        return idbData;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Set data in cache (memory + optional IndexedDB)
+   */
+  private setCache<T>(key: string, data: T[]): void {
+    if (this.config.useLRUCache) {
+      this.lruCache.set(key, data);
+    } else {
+      this.simpleCache.set(key, data);
+    }
+    // Persist to IndexedDB asynchronously
+    if (this.idbCache) {
+      this.idbCache.set(key, data).catch(() => {});
+    }
   }
 
   /**
    * Unified content loading method with caching and deduplication
-   * @param key - Cache key for the content type
-   * @param csvContent - Raw CSV string to parse
-   * @param transformer - Function to transform raw CSV rows to typed objects
-   * @returns Promise resolving to array of transformed content
    */
   private async loadContent<T>(
     key: string,
     csvContent: string,
-    transformer: (raw: any) => T
+    transformer: (raw: Record<string, string>) => T
   ): Promise<T[]> {
-    // Check cache first
-    if (this.cache.has(key)) {
-      return this.cache.get(key) as T[];
+    // Check cache first (including IndexedDB)
+    const cached = await this.getCachedAsync<T>(key);
+    if (cached) {
+      if (this.config.debug) console.log(`[ContentLoader] Cache hit: ${key}`);
+      return cached;
     }
 
     // Deduplicate concurrent requests
@@ -462,7 +617,7 @@ export class ContentLoader {
 
     try {
       const data = await promise;
-      this.cache.set(key, data);
+      this.setCache(key, data);
       return data;
     } finally {
       this.pendingRequests.delete(key);
@@ -471,27 +626,57 @@ export class ContentLoader {
 
   /**
    * Parse CSV content and transform to typed objects
+   * Uses chunked parsing for large datasets to avoid blocking UI
    */
   private async parseAndTransform<T>(
     key: string,
     csvContent: string,
-    transformer: (raw: any) => T
+    transformer: (raw: Record<string, string>) => T
   ): Promise<T[]> {
-    const { data, errors } = parseCSV(csvContent);
+    const startTime = performance.now();
+    const estimatedRows = (csvContent.match(/\n/g) || []).length;
+    const useChunked = this.config.useChunkedParsing && estimatedRows > 5000;
 
-    // Only log errors in development and ignore common non-critical warnings
-    if (errors.length > 0 && import.meta.env.DEV) {
-      const criticalErrors = errors.filter(e => e.type === 'Quotes' || e.type === 'Delimiter');
-      if (criticalErrors.length > 0) {
-        console.warn(`CSV parse errors for ${key}:`, criticalErrors);
+    let data: T[];
+    
+    if (useChunked) {
+      if (this.config.debug) console.log(`[ContentLoader] Chunked parsing: ${key} (~${estimatedRows} rows)`);
+      
+      const result = await parseCSVChunked<T>(csvContent, {
+        chunkSize: this.config.chunkSize,
+        transform: transformer,
+        onProgress: (p) => {
+          if (this.config.debug) console.log(`[ContentLoader] ${key}: ${p.percentage.toFixed(1)}%`);
+          this.config.onParseProgress?.(key, p);
+        },
+      });
+      
+      data = result.data;
+      this.parseMetrics.set(key, { parseTime: result.parseTime, rowCount: result.totalRows });
+    } else {
+      const { data: rawData, errors } = parseCSV<Record<string, string>>(csvContent);
+
+      if (errors.length > 0 && import.meta.env.DEV) {
+        const criticalErrors = errors.filter(e => e.type === 'Quotes' || e.type === 'Delimiter');
+        if (criticalErrors.length > 0) console.warn(`CSV parse errors for ${key}:`, criticalErrors);
       }
+
+      if (rawData.length === 0) throw new ContentLoadError(key, ['No data found in CSV']);
+
+      // Use batch processing for large transforms
+      data = rawData.length > 1000 
+        ? await batchProcess(rawData, transformer, 500)
+        : rawData.map(transformer);
+      
+      this.parseMetrics.set(key, { parseTime: performance.now() - startTime, rowCount: rawData.length });
     }
 
-    if (data.length === 0) {
-      throw new ContentLoadError(key, ['No data found in CSV']);
+    if (this.config.debug) {
+      const m = this.parseMetrics.get(key)!;
+      console.log(`[ContentLoader] Parsed ${key}: ${m.rowCount} rows in ${m.parseTime.toFixed(2)}ms`);
     }
 
-    return data.map(transformer);
+    return data;
   }
 
   // ============================================================================
@@ -557,9 +742,9 @@ export class ContentLoader {
     }
     
     // Also cache festivals (events with type 'Festival')
-    if (!this.cache.has('festivals')) {
+    if (!this.getCached<Festival>('festivals')) {
       const festivals = events.filter((e: Event) => e.type === 'Festival') as FestivalType[];
-      this.cache.set('festivals', festivals);
+      this.setCache('festivals', festivals);
       
       // Build festival lookup map
       this.festivalsByKey.clear();
@@ -654,7 +839,7 @@ export class ContentLoader {
   async loadFestivals(): Promise<Festival[]> {
     // Ensure events are loaded first (which caches festivals)
     await this.loadEvents();
-    return this.cache.get('festivals') as Festival[];
+    return this.getCached<Festival>('festivals') || [];
   }
 
   async loadTools(): Promise<Tool[]> {
@@ -677,47 +862,47 @@ export class ContentLoader {
   // ============================================================================
 
   getCategories(): Category[] {
-    return this.cache.get('categories') || [];
+    return this.getCached<Category>('categories') || [];
   }
 
   getTags(): Tag[] {
-    return this.cache.get('tags') || [];
+    return this.getCached<Tag>('tags') || [];
   }
 
   getGuides(): Guide[] {
-    return this.cache.get('guides') || [];
+    return this.getCached<Guide>('guides') || [];
   }
 
   getCharacters(): Character[] {
-    return this.cache.get('characters') || [];
+    return this.getCached<Character>('characters') || [];
   }
 
   getEvents(): Event[] {
-    return this.cache.get('events') || [];
+    return this.getCached<Event>('events') || [];
   }
 
   getSwimsuits(): Swimsuit[] {
-    return this.cache.get('swimsuits') || [];
+    return this.getCached<Swimsuit>('swimsuits') || [];
   }
 
   getItems(): Item[] {
-    return this.cache.get('items') || [];
+    return this.getCached<Item>('items') || [];
   }
 
   getEpisodes(): Episode[] {
-    return this.cache.get('episodes') || [];
+    return this.getCached<Episode>('episodes') || [];
   }
 
   getFestivals(): Festival[] {
-    return this.cache.get('festivals') || [];
+    return this.getCached<Festival>('festivals') || [];
   }
 
   getGachas(): Gacha[] {
-    return this.cache.get('gachas') || [];
+    return this.getCached<Gacha>('gachas') || [];
   }
 
   getTools(): Tool[] {
-    return this.cache.get('tools') || [];
+    return this.getCached<Tool>('tools') || [];
   }
 
   // ============================================================================
@@ -854,32 +1039,146 @@ export class ContentLoader {
    * Clear cache and all lookup maps to allow fresh loading
    */
   clearCache(): void {
-    this.cache.clear();
+    if (this.config.useLRUCache) this.lruCache.clear();
+    else this.simpleCache.clear();
+    
     this.pendingRequests.clear();
+    this.parseMetrics.clear();
+    this.searchInstances.clear();
     
     // Clear all lookup maps
-    this.charactersByKey.clear();
-    this.charactersByIndex.clear();
-    this.swimsuitsByKey.clear();
-    this.swimsuitsByIndex.clear();
-    this.eventsByKey.clear();
-    this.eventsByIndex.clear();
-    this.guidesByKey.clear();
-    this.guidesByIndex.clear();
-    this.itemsByKey.clear();
-    this.itemsByIndex.clear();
-    this.episodesByKey.clear();
-    this.episodesByIndex.clear();
-    this.gachasByKey.clear();
-    this.gachasByIndex.clear();
-    this.festivalsByKey.clear();
-    this.categoriesByKey.clear();
-    this.tagsByKey.clear();
-    this.toolsByKey.clear();
-    this.toolsByIndex.clear();
+    [this.charactersByKey, this.charactersByIndex, this.swimsuitsByKey, this.swimsuitsByIndex,
+     this.eventsByKey, this.eventsByIndex, this.guidesByKey, this.guidesByIndex,
+     this.itemsByKey, this.itemsByIndex, this.episodesByKey, this.episodesByIndex,
+     this.gachasByKey, this.gachasByIndex, this.festivalsByKey, this.categoriesByKey,
+     this.tagsByKey, this.toolsByKey, this.toolsByIndex].forEach(m => m.clear());
+    
+    // Clear IndexedDB if enabled
+    this.idbCache?.clear().catch(() => {});
   }
 
+  /**
+   * Cleanup expired cache entries (call periodically for long-running apps)
+   */
+  cleanupExpiredCache(): number {
+    return this.config.useLRUCache ? this.lruCache.cleanup() : 0;
+  }
+
+  // ============================================================================
+  // Pagination & Virtual List Utilities
+  // ============================================================================
+
+  /**
+   * Get paginated content
+   */
+  paginate<T>(data: T[], page = 1, pageSize = 50): PaginatedResult<T> {
+    return paginate(data, page, pageSize);
+  }
+
+  /**
+   * Create a paginated accessor for efficient page-by-page iteration
+   */
+  createPaginatedAccessor<T>(data: T[], pageSize = 50) {
+    return createPaginatedAccessor(data, pageSize);
+  }
+
+  /**
+   * Get items for virtual list rendering (windowed)
+   */
+  getVirtualListItems<T>(
+    data: T[],
+    scrollTop: number,
+    config: { itemHeight: number; containerHeight: number; overscan?: number }
+  ): VirtualListResult<T> {
+    return getVirtualListItems(data, scrollTop, config);
+  }
+
+  // ============================================================================
+  // Search Utilities
+  // ============================================================================
+
+  /**
+   * Create or get a debounced search instance for a content type
+   */
+  createSearch<T extends BaseContent>(
+    contentType: ContentType,
+    data: T[],
+    searchFn?: (item: T, query: string) => boolean,
+    debounceMs = 150
+  ) {
+    const key = contentType;
+    
+    // Default search function: search in title and summary
+    const defaultSearchFn = (item: T, query: string) => {
+      const q = query.toLowerCase();
+      return item.title.toLowerCase().includes(q) || 
+             (item.summary?.toLowerCase().includes(q) ?? false);
+    };
+    
+    const searcher = createDebouncedSearch(
+      data as unknown as BaseContent[], 
+      (searchFn ?? defaultSearchFn) as (item: BaseContent, query: string) => boolean, 
+      debounceMs
+    );
+    this.searchInstances.set(key, searcher);
+    return searcher as { search: (query: string) => Promise<T[]>; clearCache: () => void };
+  }
+
+  /**
+   * Quick search across all loaded content types
+   */
+  async searchAll(query: string): Promise<Map<ContentType, BaseContent[]>> {
+    const results = new Map<ContentType, BaseContent[]>();
+    const q = query.toLowerCase();
+    
+    const searchInContent = <T extends BaseContent>(data: T[], type: ContentType) => {
+      const matches = data.filter(item => 
+        item.title.toLowerCase().includes(q) || 
+        (item.summary?.toLowerCase().includes(q) ?? false)
+      );
+      if (matches.length > 0) results.set(type, matches);
+    };
+
+    // Search in all cached content
+    searchInContent(this.getCharacters(), 'characters');
+    searchInContent(this.getGuides(), 'guides');
+    searchInContent(this.getSwimsuits(), 'swimsuits');
+    searchInContent(this.getEvents(), 'events');
+    searchInContent(this.getItems(), 'items');
+    searchInContent(this.getEpisodes(), 'episodes');
+    searchInContent(this.getTools(), 'tools');
+    
+    return results;
+  }
+
+  // ============================================================================
+  // Batch Processing Utilities
+  // ============================================================================
+
+  /**
+   * Process items in batches to avoid blocking UI
+   */
+  async batchProcess<T, R>(
+    items: T[],
+    processor: (item: T, index: number) => R,
+    batchSize = 100,
+    onProgress?: (processed: number, total: number) => void
+  ): Promise<R[]> {
+    return batchProcess(items, processor, batchSize, onProgress);
+  }
+
+  /**
+   * Dispose resources (call when app unmounts)
+   */
+  dispose(): void {
+    this.clearCache();
+    this.idbCache?.close();
+    this.idbCache = null;
+  }
 }
+
+// Re-export utility types for consumers
+export type { PaginatedResult, VirtualListResult, ChunkProgress };
 
 // Export singleton instance
 export const contentLoader = ContentLoader.getInstance();
