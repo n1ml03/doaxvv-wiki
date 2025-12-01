@@ -100,9 +100,7 @@ const CharacterDetailPage = () => {
             <div className="relative grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 p-4 sm:p-8">
               <div className="md:col-span-2 space-y-3 sm:space-y-4 order-2 md:order-1">
                 <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                  <Badge className="bg-accent text-accent-foreground px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold">
-                    {character.type}
-                  </Badge>
+                  
                 </div>
                 <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-foreground tracking-tight">
                   <LocalizedText localized={character.name} showIndicator />
@@ -689,25 +687,6 @@ const CharacterDetailPage = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Character's Swimsuits */}
-        {characterSwimsuits.length > 0 && (
-          <RelatedContent
-            title={t('characterDetail.swimsuitsOf').replace('{name}', getLocalizedValue(character.name, currentLanguage))}
-            items={characterSwimsuits.map(suit => ({
-              id: suit.id,
-              title: getLocalizedValue(suit.name, currentLanguage),
-              image: suit.image,
-              href: "/swimsuits",
-              badge: suit.rarity,
-              description: suit.skills && suit.skills.length > 0 
-                ? getLocalizedValue(suit.skills[0].name, currentLanguage) 
-                : suit.title,
-            }))}
-            viewAllHref="/swimsuits"
-            viewAllLabel={t('characterDetail.viewAllSwimsuits')}
-          />
-        )}
-
         {/* Related Guides */}
         <RelatedContent
           title={t('characterDetail.relatedGuides')}
@@ -731,7 +710,6 @@ const CharacterDetailPage = () => {
               title: getLocalizedValue(girl.name, currentLanguage),
               image: girl.image,
               href: `/girls/${girl.unique_key}`,
-              badge: girl.type,
             }))}
             viewAllHref="/girls"
             viewAllLabel={t('characterDetail.viewAllGirls')}

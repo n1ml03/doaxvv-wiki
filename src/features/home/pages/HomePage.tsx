@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Header from "@/shared/layouts/Header";
 import Footer from "@/shared/layouts/Footer";
-import { Hero, WhatsNew, SiteOverview } from "../components";
+import { Hero, WhatsNew, SiteOverview, VersionUpdates } from "../components";
 import { CurrentEvents } from "@/features/events";
 import { FeaturedCharacters } from "@/features/characters";
 import { PopularGuides } from "@/features/guides";
@@ -89,24 +89,30 @@ const HomePage = () => {
             <SiteOverview />
           </div>
 
-          {/* Main Content Grid - 1 col mobile/tablet, 3 col desktop with sidebar */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 mt-8 sm:mt-12">
-            {/* Main content area - full width on mobile/tablet, 2/3 on desktop */}
-            <div className="lg:col-span-2 space-y-8 sm:space-y-12 order-1">
-              <WhatsNew />
-              <CurrentEvents />
-            </div>
-            
-            {/* Sidebar - stacks below main content on mobile/tablet */}
-            <aside className="space-y-6 sm:space-y-8 order-2 lg:order-2">
-              <FeaturedCharacters />
-              
-              {/* Quick Links */}
-              <Card className="border-border/50 bg-card shadow-card">
-                <CardHeader className="pb-3 sm:pb-6">
-                  <CardTitle className="text-lg sm:text-xl">{t('home.quickLinks.title')}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 sm:space-y-4">
+          {/* Version Updates - Full Width Prominent Section */}
+          <div className="mt-8 sm:mt-12">
+            <VersionUpdates />
+          </div>
+
+          {/* Current Events - Full Width */}
+          <div className="mt-8 sm:mt-12">
+            <CurrentEvents />
+          </div>
+
+          {/* What's New and Featured Girls - Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mt-8 sm:mt-12">
+            <WhatsNew />
+            <FeaturedCharacters />
+          </div>
+
+          {/* Quick Links Section */}
+          <div className="mt-8 sm:mt-12">
+            <Card className="border-border/50 bg-card shadow-card">
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-lg sm:text-xl">{t('home.quickLinks.title')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                   <Link to="/events">
                     <Button variant="outline" className="w-full justify-start h-10 sm:h-11 text-sm sm:text-base">
                       <Calendar className="h-4 w-4 mr-2" />
@@ -131,10 +137,12 @@ const HomePage = () => {
                       {t('home.quickLinks.swimsuitCollection')}
                     </Button>
                   </Link>
-                </CardContent>
-              </Card>
-            </aside>
+                </div>
+              </CardContent>
+            </Card>
           </div>
+
+
 
           {/* Full Width Sections */}
           <div className="mt-8 sm:mt-12">

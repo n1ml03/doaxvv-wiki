@@ -25,9 +25,9 @@ const EventsPage = () => {
   const [sortBy, setSortBy] = useState("newest");
 
   const categories = [
-    { value: "Match", label: "Match" },
-    { value: "Festival", label: "Festival" },
-    { value: "Ranking", label: "Ranking" },
+    { value: "Match", label: t('eventType.match') },
+    { value: "Festival", label: t('eventType.festival') },
+    { value: "Ranking", label: t('eventType.ranking') },
   ];
 
   const filteredEvents = useMemo(() => {
@@ -136,7 +136,7 @@ const EventsPage = () => {
             items={filteredEvents}
             itemsPerPage={ITEMS_PER_PAGE}
             getKey={(event) => event.id}
-            gridClassName="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6"
+            gridClassName="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6"
             resetDeps={[searchTerm, selectedCategory, sortBy]}
             emptyState={
               <div className="text-center py-12 sm:py-16">
@@ -160,10 +160,10 @@ const EventsPage = () => {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                       <div className="absolute top-3 left-3 flex gap-2">
                         <Badge className={getStatusColor(event.event_status)}>
-                          {event.event_status}
+                          {t(`status.${event.event_status.toLowerCase()}`)}
                         </Badge>
                         <Badge variant="outline" className="bg-background/90 text-foreground border-0">
-                          {event.type}
+                          {t(`eventType.${event.type.toLowerCase()}`)}
                         </Badge>
                       </div>
                       {event.event_status === "Active" && (

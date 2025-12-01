@@ -9,6 +9,8 @@ import {
   Package,
   Film,
   Wrench,
+  Gem,
+  Target,
 } from "lucide-react";
 import { NavGroup } from "@/shared/types/navigation";
 
@@ -26,6 +28,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { path: "/girls", label: "Girls", icon: Heart },
       { path: "/swimsuits", label: "Swimsuits", icon: Sparkles },
+      { path: "/accessories", label: "Accessories", icon: Gem },
     ],
   },
   {
@@ -37,6 +40,7 @@ export const navigationGroups: NavGroup[] = [
       { path: "/gachas", label: "Gachas", icon: Gift },
       { path: "/episodes", label: "Episodes", icon: Film },
       { path: "/items", label: "Items", icon: Package },
+      { path: "/missions", label: "Missions", icon: Target },
     ],
   },
   {

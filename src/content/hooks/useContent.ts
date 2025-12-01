@@ -17,6 +17,8 @@ import type {
   Category,
   Tag,
   Tool,
+  Accessory,
+  Mission,
 } from '../schemas/content.schema';
 
 export interface UseContentOptions {
@@ -87,6 +89,12 @@ export function useContent<T>(
           break;
         case 'tools':
           result = await loaderRef.current.loadTools();
+          break;
+        case 'accessories':
+          result = await loaderRef.current.loadAccessories();
+          break;
+        case 'missions':
+          result = await loaderRef.current.loadMissions();
           break;
         default:
           throw new Error(`Unknown content type: ${contentType}`);

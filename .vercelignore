@@ -44,7 +44,6 @@ Thumbs.db
 docs
 
 # Ignore markdown files except content data (guides, tools)
-*.md
 !README.md
 !src/content/data/**/*.md
 

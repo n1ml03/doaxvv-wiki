@@ -51,7 +51,7 @@ const FeaturedCharacters = () => {
                   <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1 mb-1">
                     {girl.title}
                   </h3>
-                  <span className="text-xs text-muted-foreground">{girl.type}</span>
+
                 </div>
               </div>
             </Card>

@@ -215,7 +215,14 @@ export function HeroSearch({ placeholder = 'Search characters, events, swimsuits
             onKeyDown={handleKeyDown}
             onFocus={() => {
               setIsFocused(true);
-              if (query.trim()) setIsOpen(true);
+              if (query.trim()) {
+                setIsOpen(true);
+                // Re-trigger search to ensure fresh results when refocusing
+                setIsLoading(true);
+                const searchResults = searchService.search(query);
+                setResults(searchResults);
+                setIsLoading(false);
+              }
             }}
             onBlur={() => setIsFocused(false)}
             placeholder={placeholder}

@@ -290,6 +290,25 @@ Advanced content.`;
       expect(sections[0].title).toContain('こんにちは');
     });
 
+    it('should normalize Vietnamese characters in section IDs', () => {
+      const markdown = '## Bắt Đầu Như Thế Nào';
+      const sections = parseMarkdownSections(markdown);
+      // Vietnamese characters should be normalized to ASCII equivalents
+      expect(sections[0].id).toBe('bat-dau-nhu-the-nao');
+    });
+
+    it('should handle Vietnamese headings with diacritical marks', () => {
+      const markdown = '## Hướng Dẫn Toàn Diện Cho Người Mới';
+      const sections = parseMarkdownSections(markdown);
+      expect(sections[0].id).toBe('huong-dan-toan-dien-cho-nguoi-moi');
+    });
+
+    it('should handle Vietnamese đ character', () => {
+      const markdown = '## Đây Là Đầu Đề';
+      const sections = parseMarkdownSections(markdown);
+      expect(sections[0].id).toBe('day-la-dau-de');
+    });
+
     it('should handle empty sections', () => {
       const markdown = '## \n\nContent here';
       const sections = parseMarkdownSections(markdown);

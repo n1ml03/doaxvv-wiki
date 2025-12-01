@@ -41,7 +41,8 @@ const Header = () => {
   const flattenedResults = getFlattenedResults(results);
 
   const isHomePage = location.pathname === "/";
-  const showSearch = !isHomePage;
+  const isSearchPage = location.pathname === "/search";
+  const showSearch = !isHomePage && !isSearchPage;
 
   // Recent searches management (Requirements: 6.1, 6.2, 6.3, 6.4)
   const { searches: recentSearches, addSearch, removeSearch, clearSearches } = useRecentSearches();
@@ -217,7 +218,7 @@ const Header = () => {
                     onSelect={handleSelect}
                     focusedIndex={focusedIndex}
                     onFocusChange={setFocusedIndex}
-                    className="w-[400px] left-1/2 -translate-x-1/2"
+                    className="w-[400px] left-[calc(50%-200px)]"
                     recentSearches={recentSearches}
                     onRecentSearchClick={(search) => {
                       setQuery(search);

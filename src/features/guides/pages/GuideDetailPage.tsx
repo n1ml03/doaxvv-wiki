@@ -330,7 +330,6 @@ const GuideDetailPage = () => {
                 title: char.title,
                 image: char.image,
                 href: `/girls/${char.unique_key}`,
-                badge: char.type,
               }))}
               viewAllHref="/girls"
               viewAllLabel={t('guideDetail.viewAllGirls')}

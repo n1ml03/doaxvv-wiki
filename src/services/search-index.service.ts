@@ -132,7 +132,6 @@ export class SearchIndexService {
     ]);
 
     this.indexBuilt = true;
-    console.log(`[SearchIndex] Built all indexes in ${(performance.now() - startTime).toFixed(2)}ms`);
   }
 
   private async buildCharacterIndex(): Promise<void> {
@@ -432,8 +431,6 @@ export class SearchIndexService {
       unique_key: char.unique_key,
       title: this.getLocalizedValue(char.name, language) || char.title,
       image: char.image,
-      badge: char.type,
-      badgeVariant: this.getRarityBadgeVariant(char.type),
       url: `/girls/${char.unique_key}`,
       _original: char,
     };

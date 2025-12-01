@@ -1,26 +1,91 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { Clock } from "lucide-react";
+import { Clock, ChevronRight } from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
-import { ChevronRight } from "lucide-react";
 import { contentLoader } from "@/content";
 import type { Event } from "@/content";
 import { DatasetImage } from "@/shared/components";
 
+const ITEM_WIDTH = 350;
+const GAP = 24;
+const CARD_WIDTH = ITEM_WIDTH + GAP;
+
 const CurrentEvents = () => {
   const [time, setTime] = useState(new Date());
   const [events, setEvents] = useState<Event[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isScrollingRef = useRef(false);
+  const rafRef = useRef<number>();
 
   useEffect(() => {
     async function loadContent() {
       await contentLoader.initialize();
       const allEvents = contentLoader.getEvents();
-      setEvents(allEvents.filter(e => e.event_status === "Active").slice(0, 2));
+      setEvents(allEvents.filter(e => e.event_status === "Active").slice(0, 10));
     }
     loadContent();
   }, []);
+
+  // Memoize looped events to prevent recreation on every render
+  const loopedEvents = useMemo(
+    () => (events.length > 0 ? [...events, ...events, ...events] : []),
+    [events]
+  );
+
+  // Memoize total width calculation
+  const totalWidth = useMemo(() => CARD_WIDTH * events.length, [events.length]);
+
+  // Initialize scroll position to middle set
+  useEffect(() => {
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer || events.length === 0) return;
+
+    scrollContainer.scrollLeft = totalWidth; // Start at middle set
+  }, [events.length, totalWidth]);
+
+  // Optimized scroll handler with RAF for smooth repositioning
+  const handleScroll = useCallback(() => {
+    if (isScrollingRef.current) return;
+    
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer || events.length === 0) return;
+
+    const { scrollLeft } = scrollContainer;
+
+    // Loop back to middle when reaching the end
+    if (scrollLeft >= totalWidth * 2) {
+      isScrollingRef.current = true;
+      rafRef.current = requestAnimationFrame(() => {
+        scrollContainer.scrollLeft = scrollLeft - totalWidth;
+        isScrollingRef.current = false;
+      });
+    }
+    // Loop to middle when scrolling before start
+    else if (scrollLeft <= 0) {
+      isScrollingRef.current = true;
+      rafRef.current = requestAnimationFrame(() => {
+        scrollContainer.scrollLeft = scrollLeft + totalWidth;
+        isScrollingRef.current = false;
+      });
+    }
+  }, [events.length, totalWidth]);
+
+  // Infinite scroll loop handler with passive listener
+  useEffect(() => {
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer || events.length === 0) return;
+
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, [events.length, handleScroll]);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -47,11 +112,11 @@ const CurrentEvents = () => {
           </Button>
         </Link>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {events.map((event) => (
-          <Link key={event.id} to={`/events/${event.unique_key}`}>
+      <div ref={scrollRef} className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide" style={{ willChange: 'scroll-position' }}>
+        {loopedEvents.map((event, index) => (
+          <Link key={`${event.id}-${index}`} to={`/events/${event.unique_key}`} className="flex-shrink-0 w-[300px] md:w-[350px]">
             <Card 
-              className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1"
+              className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 h-full"
             >
               <div className="aspect-video overflow-hidden relative">
                 <DatasetImage 

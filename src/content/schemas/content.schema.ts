@@ -31,7 +31,6 @@ export interface Guide extends BaseContent {
 }
 
 export interface Character extends BaseContent {
-  type: 'SSR' | 'SR' | 'R';
   image: string;
   stats: { POW: number; TEC: number; STM: number; APL?: number };
   // Localized fields
@@ -61,6 +60,7 @@ export interface Swimsuit extends BaseContent {
   character: string;
   character_id: string;
   image: string;
+  deco_bromide_image?: string;  // Optional deco-bromide variant image
   stats: { POW: number; TEC: number; STM: number; APL?: number };
   // Localized fields
   name: LocalizedString;
@@ -170,11 +170,42 @@ export interface Tool extends BaseContent {
   localizedSummary: LocalizedString;
 }
 
+export interface Accessory extends BaseContent {
+  rarity: 'SSR' | 'SR' | 'R' | 'N';
+  character_ids: string[];           // Characters who can equip this
+  image: string;
+  stats?: {
+    POW?: number;
+    TEC?: number;
+    STM?: number;
+    APL?: number;
+  };
+  obtain_method: 'Event' | 'Gacha' | 'Shop' | 'Quest' | 'Login';
+  obtain_source?: string;            // Specific event/gacha unique_key
+  // Localized fields
+  name: LocalizedString;
+  description?: LocalizedString;
+  effect?: LocalizedString;          // Accessory effect description
+}
+
+export interface Mission extends BaseContent {
+  type: 'Daily' | 'Weekly' | 'Challenge' | 'Event' | 'Story';
+  mission_status: 'Active' | 'Completed' | 'Expired' | 'Locked';
+  event_id?: string;                 // Related event unique_key
+  image?: string;
+  objectives: string[];              // List of objectives
+  rewards: string[];                 // List of rewards
+  requirements?: string[];           // Prerequisites
+  // Localized fields
+  name: LocalizedString;
+  description?: LocalizedString;
+}
+
 // Validation rules
 export const REQUIRED_FIELDS: Record<string, string[]> = {
   base: ['id', 'title', 'unique_key', 'summary', 'category', 'tags', 'updated_at', 'author', 'status'],
   guide: ['content_ref', 'difficulty', 'read_time', 'image', 'topics', 'localizedTitle', 'content'],
-  character: ['type', 'image', 'stats', 'name', 'birthday', 'height', 'hobby'],
+  character: ['image', 'stats', 'name', 'birthday', 'height', 'hobby'],
   event: ['type', 'event_status', 'start_date', 'end_date', 'image', 'rewards', 'name'],
   swimsuit: ['rarity', 'character_id', 'image', 'stats', 'name', 'skills'],
   item: ['type', 'rarity', 'image', 'name'],
@@ -182,7 +213,9 @@ export const REQUIRED_FIELDS: Record<string, string[]> = {
   episode: ['type', 'episode_status', 'image', 'name'],
   category: ['id', 'name', 'unique_key', 'description', 'order'],
   tag: ['id', 'name', 'unique_key', 'usage_count'],
-  tool: ['content_ref', 'image', 'localizedTitle', 'localizedSummary']
+  tool: ['content_ref', 'image', 'localizedTitle', 'localizedSummary'],
+  accessory: ['rarity', 'image', 'obtain_method', 'name'],
+  mission: ['type', 'mission_status', 'objectives', 'rewards', 'name']
 };
 
 export const VALID_STATUSES = ['draft', 'published', 'archived'] as const;
@@ -195,3 +228,7 @@ export const VALID_EVENT_STATUSES = ['Active', 'Upcoming', 'Ended'] as const;
 export const VALID_GACHA_STATUSES = ['Active', 'Coming Soon', 'Ended'] as const;
 export const VALID_EPISODE_TYPES = ['Character', 'Gravure', 'Event', 'Extra', 'Bromide'] as const;
 export const VALID_EPISODE_STATUSES = ['Available', 'Coming Soon', 'Limited'] as const;
+export const VALID_ACCESSORY_RARITIES = ['SSR', 'SR', 'R', 'N'] as const;
+export const VALID_OBTAIN_METHODS = ['Event', 'Gacha', 'Shop', 'Quest', 'Login'] as const;
+export const VALID_MISSION_TYPES = ['Daily', 'Weekly', 'Challenge', 'Event', 'Story'] as const;
+export const VALID_MISSION_STATUSES = ['Active', 'Completed', 'Expired', 'Locked'] as const;

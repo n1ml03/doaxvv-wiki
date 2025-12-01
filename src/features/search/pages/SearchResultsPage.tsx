@@ -53,7 +53,7 @@ const CONTENT_TYPE_CONFIG: Record<IndexedSearchResult['type'], { label: string; 
   gacha: { label: 'Gachas', icon: Gift, color: 'text-apl', bgColor: 'bg-apl/10' },
   guide: { label: 'Guides', icon: BookOpen, color: 'text-stm', bgColor: 'bg-stm/10' },
   item: { label: 'Items', icon: Package, color: 'text-muted-foreground', bgColor: 'bg-muted/50' },
-  episode: { label: 'Episodes', icon: Film, color: 'text-accent', bgColor: 'bg-accent/10' },
+  episode: { label: 'Episodes', icon: Film, color: 'text-orange-500', bgColor: 'bg-orange-500/15' },
 };
 
 const CONTENT_TYPE_ORDER: IndexedSearchResult['type'][] = ['character', 'swimsuit', 'event', 'gacha', 'guide', 'item', 'episode'];
@@ -375,13 +375,12 @@ const SearchResultsPage = () => {
     initialize();
   }, []);
 
-  // Sync query from URL
+  // Sync query from URL (only when URL changes externally, not from user input)
   useEffect(() => {
     const urlQuery = searchParams.get("q") || "";
-    if (urlQuery !== query) {
-      setQuery(urlQuery);
-    }
-  }, [searchParams, query]);
+    setQuery(urlQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Search results using FlexSearch (O(1) performance)
   const searchResults = useMemo(() => {
@@ -430,7 +429,8 @@ const SearchResultsPage = () => {
   // Reset pagination when filter or query changes
   useEffect(() => {
     pagination.reset();
-  }, [filterType, deferredQuery, pagination]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterType, deferredQuery]);
 
   // Switch to virtual mode for large datasets
   useEffect(() => {

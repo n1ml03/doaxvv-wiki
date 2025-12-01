@@ -34,20 +34,15 @@ const CharactersPage = () => {
   // Set dynamic page title (Requirements: 9.1, 9.2)
   useDocumentTitle(t('characters.title'));
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortBy, setSortBy] = useState("newest");
 
-  const categories = [
-    { value: "SSR", label: "SSR" },
-    { value: "SR", label: "SR" },
-  ];
+
 
   const filteredAndSortedCharacters = useMemo(() => {
     let result = characters.filter(char => {
       const localizedName = getLocalizedValue(char.name, currentLanguage);
       const matchesSearch = localizedName.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = selectedCategory === "All" || char.type === selectedCategory;
-      return matchesSearch && matchesType;
+      return matchesSearch;
     });
 
     // Sort
@@ -76,7 +71,8 @@ const CharactersPage = () => {
     }
 
     return result;
-  }, [searchTerm, selectedCategory, sortBy, characters, currentLanguage]);
+    return result;
+  }, [searchTerm, sortBy, characters, currentLanguage]);
 
   // Pagination
   const pagination = usePagination({
@@ -87,7 +83,8 @@ const CharactersPage = () => {
   // Reset pagination when filters change
   useEffect(() => {
     pagination.reset();
-  }, [searchTerm, selectedCategory, sortBy, pagination]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, sortBy]);
 
   // Get paginated characters
   const paginatedCharacters = useMemo(() => 
@@ -149,9 +146,7 @@ const CharactersPage = () => {
 
           <SearchFilter
             placeholder={t('characters.searchPlaceholder')}
-            categories={categories}
             onSearchChange={setSearchTerm}
-            onCategoryChange={setSelectedCategory}
             onSortChange={setSortBy}
           />
 
@@ -159,10 +154,17 @@ const CharactersPage = () => {
           {filteredAndSortedCharacters.length > 0 && (
             <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground">
               <span>
-                Showing {pagination.startIndex + 1}-{Math.min(pagination.endIndex, filteredAndSortedCharacters.length)} of {filteredAndSortedCharacters.length}
+                {t('pagination.showing')
+                  .replace('{start}', (pagination.startIndex + 1).toString())
+                  .replace('{end}', Math.min(pagination.endIndex, filteredAndSortedCharacters.length).toString())
+                  .replace('{total}', filteredAndSortedCharacters.length.toString())}
               </span>
               {pagination.totalPages > 1 && (
-                <span>Page {pagination.currentPage} of {pagination.totalPages}</span>
+                <span>
+                  {t('pagination.page')
+                    .replace('{current}', pagination.currentPage.toString())
+                    .replace('{total}', pagination.totalPages.toString())}
+                </span>
               )}
             </div>
           )}
@@ -182,9 +184,6 @@ const CharactersPage = () => {
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <Badge className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-accent text-accent-foreground text-xs sm:text-sm">
-                      {character.type}
-                    </Badge>
                     <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
                       <div className="flex gap-1 sm:gap-2 text-white text-xs sm:text-sm">
                         <div className="flex-1 bg-background/20 backdrop-blur rounded px-1.5 sm:px-2 py-1">

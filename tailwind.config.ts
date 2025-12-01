@@ -132,12 +132,12 @@ export default {
           "100%": { transform: "translateX(-100%)", opacity: "0" }
         },
         "dropdown-in": {
-          "0%": { opacity: "0", transform: "translateY(-8px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" }
+          "0%": { opacity: "0", transform: "scale(0.95) translateY(-4px)" },
+          "100%": { opacity: "1", transform: "scale(1) translateY(0)" }
         },
         "dropdown-out": {
-          "0%": { opacity: "1", transform: "translateY(0)" },
-          "100%": { opacity: "0", transform: "translateY(-8px)" }
+          "0%": { opacity: "1", transform: "scale(1) translateY(0)" },
+          "100%": { opacity: "0", transform: "scale(0.95) translateY(-4px)" }
         }
       },
       animation: {
@@ -150,8 +150,8 @@ export default {
         "slide-out-right": "slide-out-right 0.3s ease-out",
         "slide-in-left": "slide-in-left 0.3s ease-out",
         "slide-out-left": "slide-out-left 0.3s ease-out",
-        "dropdown-in": "dropdown-in 0.2s ease-out",
-        "dropdown-out": "dropdown-out 0.2s ease-out"
+        "dropdown-in": "dropdown-in 0.15s cubic-bezier(0.16, 1, 0.3, 1)",
+        "dropdown-out": "dropdown-out 0.1s ease-in"
       },
       backgroundImage: {
         "gradient-ocean": "var(--gradient-ocean)",

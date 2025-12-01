@@ -51,8 +51,8 @@ const SwimsuitsPage = () => {
   }, []);
 
   const categories = [
-    { value: "SSR", label: "SSR" },
-    { value: "SR", label: "SR" },
+    { value: "SSR", label: t('rarity.ssr') },
+    { value: "SR", label: t('rarity.sr') },
   ];
 
   const characterTags = characters.map(c => ({ value: c.unique_key, label: getLocalizedValue(c.name, currentLanguage) }));
@@ -155,10 +155,17 @@ const SwimsuitsPage = () => {
           {filteredSwimsuits.length > 0 && (
             <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground">
               <span>
-                Showing {pagination.startIndex + 1}-{Math.min(pagination.endIndex, filteredSwimsuits.length)} of {filteredSwimsuits.length}
+                {t('pagination.showing')
+                  .replace('{start}', (pagination.startIndex + 1).toString())
+                  .replace('{end}', Math.min(pagination.endIndex, filteredSwimsuits.length).toString())
+                  .replace('{total}', filteredSwimsuits.length.toString())}
               </span>
               {pagination.totalPages > 1 && (
-                <span>Page {pagination.currentPage} of {pagination.totalPages}</span>
+                <span>
+                  {t('pagination.page')
+                    .replace('{current}', pagination.currentPage.toString())
+                    .replace('{total}', pagination.totalPages.toString())}
+                </span>
               )}
             </div>
           )}

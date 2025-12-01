@@ -35,10 +35,10 @@ const ItemsPage = () => {
   }, []);
 
   const categories = [
-    { value: "SSR", label: "SSR" },
-    { value: "SR", label: "SR" },
-    { value: "R", label: "R" },
-    { value: "N", label: "Normal" },
+    { value: "SSR", label: t('rarity.ssr') },
+    { value: "SR", label: t('rarity.sr') },
+    { value: "R", label: t('rarity.r') },
+    { value: "N", label: t('rarity.n') },
   ];
 
   const typeTags = [
@@ -70,16 +70,6 @@ const ItemsPage = () => {
 
     return result;
   }, [searchTerm, selectedCategory, selectedTags, sortBy, items]);
-
-  const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case "SSR": return "bg-ssr text-ssr-foreground";
-      case "SR": return "bg-sr text-sr-foreground";
-      case "R": return "bg-r text-r-foreground";
-      case "N": return "bg-muted text-muted-foreground";
-      default: return "bg-muted text-muted-foreground";
-    }
-  };
 
   const getTypeIcon = (_type: string) => {
     return <Package className="h-3 w-3 mr-1" />;
@@ -150,9 +140,6 @@ const ItemsPage = () => {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     
                     <div className="absolute top-3 left-3 flex flex-col gap-2">
-                      <Badge className={getRarityColor(item.rarity)}>
-                        {item.rarity}
-                      </Badge>
                       <Badge className="bg-primary/80 text-primary-foreground">
                         {getTypeIcon(item.type)}
                         {t(`itemType.${item.type.toLowerCase()}`)}

@@ -165,7 +165,7 @@ export function SearchDropdown({
       <div
         className={cn(
           "absolute top-full left-0 right-0 mt-3 bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden z-50",
-          "animate-in fade-in-0 slide-in-from-top-2 duration-200",
+          "animate-dropdown-in origin-top",
           className
         )}
       >
@@ -184,7 +184,7 @@ export function SearchDropdown({
       <div
         className={cn(
           "absolute top-full left-0 right-0 mt-3 bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden z-50",
-          "animate-in fade-in-0 slide-in-from-top-2 duration-200",
+          "animate-dropdown-in origin-top",
           className
         )}
       >
@@ -200,7 +200,7 @@ export function SearchDropdown({
       <div
         className={cn(
           "absolute top-full left-0 right-0 mt-3 bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden z-50",
-          "animate-in fade-in-0 slide-in-from-top-2 duration-200",
+          "animate-dropdown-in origin-top",
           className
         )}
       >
@@ -286,7 +286,7 @@ export function SearchDropdown({
     <div
       className={cn(
           "absolute top-full left-0 right-0 mt-3 bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden z-50",
-          "animate-in fade-in-0 slide-in-from-top-2 duration-200",
+          "animate-dropdown-in origin-top",
           className
       )}
     >

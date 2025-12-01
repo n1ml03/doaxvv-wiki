@@ -254,6 +254,45 @@ export interface MarkdownSection {
   id: string;
 }
 
+// Vietnamese character normalization map for consistent ID generation
+const vietnameseMap: Record<string, string> = {
+  'à': 'a', 'á': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
+  'ă': 'a', 'ằ': 'a', 'ắ': 'a', 'ẳ': 'a', 'ẵ': 'a', 'ặ': 'a',
+  'â': 'a', 'ầ': 'a', 'ấ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ậ': 'a',
+  'đ': 'd',
+  'è': 'e', 'é': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ẹ': 'e',
+  'ê': 'e', 'ề': 'e', 'ế': 'e', 'ể': 'e', 'ễ': 'e', 'ệ': 'e',
+  'ì': 'i', 'í': 'i', 'ỉ': 'i', 'ĩ': 'i', 'ị': 'i',
+  'ò': 'o', 'ó': 'o', 'ỏ': 'o', 'õ': 'o', 'ọ': 'o',
+  'ô': 'o', 'ồ': 'o', 'ố': 'o', 'ổ': 'o', 'ỗ': 'o', 'ộ': 'o',
+  'ơ': 'o', 'ờ': 'o', 'ớ': 'o', 'ở': 'o', 'ỡ': 'o', 'ợ': 'o',
+  'ù': 'u', 'ú': 'u', 'ủ': 'u', 'ũ': 'u', 'ụ': 'u',
+  'ư': 'u', 'ừ': 'u', 'ứ': 'u', 'ử': 'u', 'ữ': 'u', 'ự': 'u',
+  'ỳ': 'y', 'ý': 'y', 'ỷ': 'y', 'ỹ': 'y', 'ỵ': 'y',
+};
+
+/**
+ * Normalize Vietnamese text to ASCII for URL-safe IDs
+ * This must match the normalization in MarkdownRenderer.tsx
+ */
+function normalizeVietnamese(text: string): string {
+  return text
+    .split('')
+    .map(char => vietnameseMap[char] || vietnameseMap[char.toLowerCase()] || char)
+    .join('');
+}
+
+/**
+ * Generate ID from heading text for anchor links
+ * This must match the generateId function in MarkdownRenderer.tsx
+ */
+export function generateId(text: string): string {
+  return normalizeVietnamese(text)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
 /**
  * Parse markdown content into structured sections
  */
@@ -278,10 +317,7 @@ export function parseMarkdownSections(markdown: string): MarkdownSection[] {
       flushSection();
       const level = headingMatch[1].length;
       const title = headingMatch[2].trim();
-      const id = title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
+      const id = generateId(title);
 
       currentSection = { level, title, content: '', id };
     } else if (currentSection) {

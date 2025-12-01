@@ -151,7 +151,7 @@ const FestivalsPage = () => {
           />
 
           {/* Card grid: 1 col mobile, 2 col desktop */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredFestivals.map((festival, index) => {
             const timeLeft = calculateTimeLeft(festival.end_date);
             return (

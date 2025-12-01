@@ -20,7 +20,9 @@ export type {
   Episode,
   Category,
   Tag,
-  Tool
+  Tool,
+  Accessory,
+  Mission
 } from './schemas/content.schema';
 
 export {
@@ -34,7 +36,11 @@ export {
   VALID_EVENT_STATUSES,
   VALID_GACHA_STATUSES,
   VALID_EPISODE_TYPES,
-  VALID_EPISODE_STATUSES
+  VALID_EPISODE_STATUSES,
+  VALID_ACCESSORY_RARITIES,
+  VALID_OBTAIN_METHODS,
+  VALID_MISSION_TYPES,
+  VALID_MISSION_STATUSES
 } from './schemas/content.schema';
 
 // Utilities

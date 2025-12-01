@@ -5,7 +5,7 @@ import { useTranslation } from "@/shared/hooks/useTranslation";
 const Hero = () => {
   const { t } = useTranslation();
   return (
-    <section className="relative mx-4 md:mx-8 mt-8 shadow-card rounded-3xl">
+    <section className="relative z-20 mx-4 md:mx-8 mt-8 shadow-card rounded-3xl">
       <div className="absolute inset-0 rounded-3xl overflow-hidden">
         <img 
           src={heroBeach} 

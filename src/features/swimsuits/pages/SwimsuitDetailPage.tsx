@@ -25,6 +25,7 @@ const SwimsuitDetailPage = () => {
   const [relatedGuides, setRelatedGuides] = useState<Guide[]>([]);
   const [loading, setLoading] = useState(true);
   const [isImageEnlarged, setIsImageEnlarged] = useState(false);
+  const [imageType, setImageType] = useState<'bromide' | 'deco-bromide'>('bromide');
 
   useEffect(() => {
     async function loadContent() {
@@ -95,6 +96,18 @@ const SwimsuitDetailPage = () => {
     );
   }
 
+  // Determine if toggle should be shown (only if deco-bromide exists)
+  const hasDecoBromide = swimsuit?.deco_bromide_image != null && swimsuit.deco_bromide_image !== '';
+
+  // Get current image based on selected type
+  // bromide = swimsuit.image (default)
+  // deco-bromide = swimsuit.deco_bromide_image (alternative)
+  const currentImage = swimsuit 
+    ? (imageType === 'deco-bromide' && hasDecoBromide 
+        ? swimsuit.deco_bromide_image! 
+        : swimsuit.image)
+    : '';
+
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
       case "SSR": return "bg-ssr text-ssr-foreground";
@@ -129,7 +142,7 @@ const SwimsuitDetailPage = () => {
                   aria-label="Click to enlarge image"
                 >
                   <DatasetImage
-                    src={swimsuit.image}
+                    src={currentImage}
                     alt={swimsuit.title}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
@@ -138,6 +151,30 @@ const SwimsuitDetailPage = () => {
                       {swimsuit.rarity}
                     </Badge>
                   </div>
+                  {/* Image type toggle buttons */}
+                  {hasDecoBromide && (
+                    <div 
+                      className="absolute top-3 right-3 z-10 flex gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Button
+                        variant={imageType === 'bromide' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setImageType('bromide')}
+                        className="text-xs"
+                      >
+                        Bromide
+                      </Button>
+                      <Button
+                        variant={imageType === 'deco-bromide' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setImageType('deco-bromide')}
+                        className="text-xs"
+                      >
+                        Deco
+                      </Button>
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
                     <ZoomIn className="h-12 w-12 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
@@ -307,8 +344,32 @@ const SwimsuitDetailPage = () => {
           >
             <X className="h-6 w-6 text-white" />
           </button>
+          {/* Image type toggle in modal */}
+          {hasDecoBromide && (
+            <div 
+              className="absolute top-4 left-4 z-10 flex gap-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button
+                variant={imageType === 'bromide' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setImageType('bromide')}
+                className="text-xs"
+              >
+                Bromide
+              </Button>
+              <Button
+                variant={imageType === 'deco-bromide' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setImageType('deco-bromide')}
+                className="text-xs"
+              >
+                Deco
+              </Button>
+            </div>
+          )}
           <DatasetImage
-            src={swimsuit.image}
+            src={currentImage}
             alt={swimsuit.title}
             className="w-full h-full object-contain cursor-zoom-out"
           />

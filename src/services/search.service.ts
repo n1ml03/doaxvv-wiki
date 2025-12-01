@@ -2,11 +2,279 @@
  * Search Service
  * Provides centralized search functionality across all content types
  * Implements case-insensitive matching with language support
+ * Supports advanced search syntax: id:123, pow>500, tec:300-400, key:unique-key, date:2024-01
  */
 
 import { contentLoader } from '@/content/loader';
 import type { Character, Swimsuit, Event, Gacha, Guide, Item, Episode } from '@/content/schemas/content.schema';
 import type { LocalizedString, LanguageCode } from '@/shared/types/localization';
+
+// ============================================================================
+// Advanced Search Types and Parser
+// ============================================================================
+
+export type AdvancedQueryType = 'id' | 'stats' | 'unique_key' | 'date' | 'text';
+export type StatsOperator = '=' | '>' | '<' | '>=' | '<=' | 'range';
+export type StatsField = 'pow' | 'tec' | 'stm' | 'apl';
+
+export interface AdvancedSearchQuery {
+  type: AdvancedQueryType;
+  field?: StatsField;
+  operator?: StatsOperator;
+  value: string | number | [number, number];
+  raw: string;
+}
+
+export interface AdvancedSearchParseResult {
+  queries: AdvancedSearchQuery[];
+  textQuery: string;
+  errors: string[];
+}
+
+// Regex patterns for advanced search syntax
+const ADVANCED_PATTERNS = {
+  id: /^id:(\d+)$/i,
+  uniqueKey: /^key:([a-z0-9_-]+)$/i,
+  statsComparison: /^(pow|tec|stm|apl)([><=]+)(\d+)$/i,
+  statsRange: /^(pow|tec|stm|apl):(\d+)-(\d+)$/i,
+  date: /^date:(\d{4}(?:-\d{2})?(?:-\d{2})?)$/i,
+};
+
+/**
+ * Parse a query string to detect advanced search syntax
+ * Returns structured queries and remaining text query
+ */
+export function parseAdvancedQuery(query: string): AdvancedSearchParseResult {
+  const result: AdvancedSearchParseResult = {
+    queries: [],
+    textQuery: '',
+    errors: [],
+  };
+
+  if (!query || !query.trim()) {
+    return result;
+  }
+
+  const tokens = query.trim().split(/\s+/);
+  const textTokens: string[] = [];
+
+  for (const token of tokens) {
+    const parsed = parseToken(token);
+    if (parsed.query) {
+      result.queries.push(parsed.query);
+    } else if (parsed.error) {
+      result.errors.push(parsed.error);
+      // Fall back to text search for invalid syntax
+      textTokens.push(token);
+    } else {
+      textTokens.push(token);
+    }
+  }
+
+  result.textQuery = textTokens.join(' ');
+  return result;
+}
+
+/**
+ * Parse a single token for advanced search syntax
+ */
+function parseToken(token: string): { query?: AdvancedSearchQuery; error?: string } {
+  // Check for ID pattern: id:123
+  const idMatch = token.match(ADVANCED_PATTERNS.id);
+  if (idMatch) {
+    return {
+      query: {
+        type: 'id',
+        value: parseInt(idMatch[1], 10),
+        raw: token,
+      },
+    };
+  }
+
+  // Check for unique_key pattern: key:some-key
+  const keyMatch = token.match(ADVANCED_PATTERNS.uniqueKey);
+  if (keyMatch) {
+    return {
+      query: {
+        type: 'unique_key',
+        value: keyMatch[1],
+        raw: token,
+      },
+    };
+  }
+
+  // Check for stats range pattern: pow:300-400
+  const rangeMatch = token.match(ADVANCED_PATTERNS.statsRange);
+  if (rangeMatch) {
+    const min = parseInt(rangeMatch[2], 10);
+    const max = parseInt(rangeMatch[3], 10);
+    if (min > max) {
+      return { error: `Invalid range in "${token}": min (${min}) > max (${max})` };
+    }
+    return {
+      query: {
+        type: 'stats',
+        field: rangeMatch[1].toLowerCase() as StatsField,
+        operator: 'range',
+        value: [min, max],
+        raw: token,
+      },
+    };
+  }
+
+  // Check for stats comparison pattern: pow>500, tec<=300
+  const compMatch = token.match(ADVANCED_PATTERNS.statsComparison);
+  if (compMatch) {
+    const operator = compMatch[2] as StatsOperator;
+    if (!['>', '<', '>=', '<=', '='].includes(operator)) {
+      return { error: `Invalid operator "${operator}" in "${token}"` };
+    }
+    return {
+      query: {
+        type: 'stats',
+        field: compMatch[1].toLowerCase() as StatsField,
+        operator,
+        value: parseInt(compMatch[3], 10),
+        raw: token,
+      },
+    };
+  }
+
+  // Check for date pattern: date:2024-01 or date:2024-01-15
+  const dateMatch = token.match(ADVANCED_PATTERNS.date);
+  if (dateMatch) {
+    const dateStr = dateMatch[1];
+    // Validate date format
+    if (!isValidDateFormat(dateStr)) {
+      return { error: `Invalid date format in "${token}". Use YYYY, YYYY-MM, or YYYY-MM-DD` };
+    }
+    return {
+      query: {
+        type: 'date',
+        value: dateStr,
+        raw: token,
+      },
+    };
+  }
+
+  // Check for partial advanced syntax that might be malformed
+  if (token.includes(':') && (token.startsWith('id:') || token.startsWith('key:') || token.startsWith('date:'))) {
+    return { error: `Invalid syntax: "${token}"` };
+  }
+
+  // Not an advanced query token - treat as regular text
+  return {};
+}
+
+/**
+ * Validate date format string
+ */
+function isValidDateFormat(dateStr: string): boolean {
+  const parts = dateStr.split('-');
+  if (parts.length < 1 || parts.length > 3) return false;
+  
+  const year = parseInt(parts[0], 10);
+  if (isNaN(year) || year < 2000 || year > 2100) return false;
+  
+  if (parts.length >= 2) {
+    const month = parseInt(parts[1], 10);
+    if (isNaN(month) || month < 1 || month > 12) return false;
+  }
+  
+  if (parts.length === 3) {
+    const day = parseInt(parts[2], 10);
+    if (isNaN(day) || day < 1 || day > 31) return false;
+  }
+  
+  return true;
+}
+
+/**
+ * Check if a stats value satisfies the query condition
+ */
+function matchesStatsQuery(
+  stats: { POW: number; TEC: number; STM: number; APL?: number } | undefined,
+  query: AdvancedSearchQuery
+): boolean {
+  if (!stats || query.type !== 'stats' || !query.field) return false;
+
+  const fieldMap: Record<StatsField, keyof typeof stats> = {
+    pow: 'POW',
+    tec: 'TEC',
+    stm: 'STM',
+    apl: 'APL',
+  };
+
+  const statValue = stats[fieldMap[query.field]];
+  if (statValue === undefined) return false;
+
+  if (query.operator === 'range' && Array.isArray(query.value)) {
+    const [min, max] = query.value;
+    return statValue >= min && statValue <= max;
+  }
+
+  const targetValue = query.value as number;
+  switch (query.operator) {
+    case '>': return statValue > targetValue;
+    case '<': return statValue < targetValue;
+    case '>=': return statValue >= targetValue;
+    case '<=': return statValue <= targetValue;
+    case '=': return statValue === targetValue;
+    default: return false;
+  }
+}
+
+/**
+ * Check if a date falls within the query date range
+ */
+function matchesDateQuery(
+  startDate: Date | string | undefined,
+  endDate: Date | string | undefined,
+  query: AdvancedSearchQuery
+): boolean {
+  if (query.type !== 'date') return false;
+  
+  const dateStr = query.value as string;
+  const parts = dateStr.split('-');
+  
+  // Parse query date range
+  const queryYear = parseInt(parts[0], 10);
+  const queryMonth = parts.length >= 2 ? parseInt(parts[1], 10) : undefined;
+  const queryDay = parts.length === 3 ? parseInt(parts[2], 10) : undefined;
+
+  // Calculate query date range
+  let queryStart: Date;
+  let queryEnd: Date;
+
+  if (queryDay !== undefined && queryMonth !== undefined) {
+    // Specific day: date:2024-01-15
+    queryStart = new Date(queryYear, queryMonth - 1, queryDay, 0, 0, 0);
+    queryEnd = new Date(queryYear, queryMonth - 1, queryDay, 23, 59, 59);
+  } else if (queryMonth !== undefined) {
+    // Specific month: date:2024-01
+    queryStart = new Date(queryYear, queryMonth - 1, 1);
+    queryEnd = new Date(queryYear, queryMonth, 0, 23, 59, 59); // Last day of month
+  } else {
+    // Specific year: date:2024
+    queryStart = new Date(queryYear, 0, 1);
+    queryEnd = new Date(queryYear, 11, 31, 23, 59, 59);
+  }
+
+  // Parse item dates
+  const itemStart = startDate ? new Date(startDate) : undefined;
+  const itemEnd = endDate ? new Date(endDate) : undefined;
+
+  // Check if item date range overlaps with query date range
+  if (itemStart && itemEnd) {
+    return itemStart <= queryEnd && itemEnd >= queryStart;
+  } else if (itemStart) {
+    return itemStart >= queryStart && itemStart <= queryEnd;
+  } else if (itemEnd) {
+    return itemEnd >= queryStart && itemEnd <= queryEnd;
+  }
+
+  return false;
+}
 
 export interface SearchResult {
   type: 'character' | 'swimsuit' | 'event' | 'gacha' | 'guide' | 'item' | 'episode';
@@ -31,9 +299,15 @@ export interface SearchResults {
   total: number;
 }
 
+export interface AdvancedSearchResults extends SearchResults {
+  parsedQueries: AdvancedSearchQuery[];
+  errors: string[];
+}
+
 export interface SearchOptions {
   maxPerType?: number;
   language?: LanguageCode;
+  enableAdvancedSearch?: boolean;
 }
 
 const DEFAULT_MAX_PER_TYPE = 5;
@@ -84,9 +358,14 @@ export class SearchService {
   /**
    * Search across all content types
    * Returns results grouped by type with configurable limits
+   * Supports advanced search syntax when enableAdvancedSearch is true
    */
-  search(query: string, options: SearchOptions = {}): SearchResults {
-    const { maxPerType = DEFAULT_MAX_PER_TYPE, language = DEFAULT_LANGUAGE } = options;
+  search(query: string, options: SearchOptions = {}): SearchResults | AdvancedSearchResults {
+    const { 
+      maxPerType = DEFAULT_MAX_PER_TYPE, 
+      language = DEFAULT_LANGUAGE,
+      enableAdvancedSearch = true 
+    } = options;
 
     // Return empty results for empty or whitespace-only queries
     if (!query || !query.trim()) {
@@ -95,6 +374,17 @@ export class SearchService {
 
     const trimmedQuery = query.trim();
 
+    // Parse advanced search syntax if enabled
+    if (enableAdvancedSearch) {
+      const parseResult = parseAdvancedQuery(trimmedQuery);
+      
+      // If we have advanced queries, use advanced search
+      if (parseResult.queries.length > 0) {
+        return this.advancedSearch(parseResult, maxPerType, language);
+      }
+    }
+
+    // Standard text search
     return {
       characters: this.searchCharacters(trimmedQuery, maxPerType, language),
       swimsuits: this.searchSwimsuits(trimmedQuery, maxPerType, language),
@@ -115,6 +405,125 @@ export class SearchService {
         );
       },
     };
+  }
+
+  /**
+   * Advanced search with structured queries
+   * Supports ID, stats, unique_key, and date filtering
+   */
+  private advancedSearch(
+    parseResult: AdvancedSearchParseResult,
+    maxPerType: number,
+    language: LanguageCode
+  ): AdvancedSearchResults {
+    const { queries, textQuery, errors } = parseResult;
+
+    // Start with all items or text-filtered items
+    let characters = contentLoader.getCharacters();
+    let swimsuits = contentLoader.getSwimsuits();
+    let events = contentLoader.getEvents();
+    let gachas = contentLoader.getGachas();
+    let guides = contentLoader.getGuides();
+    let items = contentLoader.getItems();
+    let episodes = contentLoader.getEpisodes();
+
+    // Apply text filter if present
+    if (textQuery) {
+      characters = characters.filter(c => 
+        matchesLocalizedQuery(c.name, textQuery, language) || matchesQuery(c.title, textQuery)
+      );
+      swimsuits = swimsuits.filter(s => 
+        matchesLocalizedQuery(s.name, textQuery, language) || matchesQuery(s.title, textQuery) || matchesQuery(s.character, textQuery)
+      );
+      events = events.filter(e => 
+        matchesLocalizedQuery(e.name, textQuery, language) || matchesQuery(e.title, textQuery)
+      );
+      gachas = gachas.filter(g => matchesLocalizedQuery(g.name, textQuery, language));
+      guides = guides.filter(g => 
+        matchesLocalizedQuery(g.localizedTitle, textQuery, language) || matchesQuery(g.title, textQuery)
+      );
+      items = items.filter(i => 
+        matchesLocalizedQuery(i.name, textQuery, language) || matchesQuery(i.title, textQuery)
+      );
+      episodes = episodes.filter(e => 
+        matchesLocalizedQuery(e.name, textQuery, language) || matchesQuery(e.title, textQuery)
+      );
+    }
+
+    // Apply advanced filters
+    for (const query of queries) {
+      switch (query.type) {
+        case 'id':
+          characters = characters.filter(c => c.id === query.value);
+          swimsuits = swimsuits.filter(s => s.id === query.value);
+          events = events.filter(e => e.id === query.value);
+          gachas = gachas.filter(g => g.id === query.value);
+          guides = guides.filter(g => g.id === query.value);
+          items = items.filter(i => i.id === query.value);
+          episodes = episodes.filter(e => e.id === query.value);
+          break;
+
+        case 'unique_key':
+          characters = characters.filter(c => c.unique_key === query.value);
+          swimsuits = swimsuits.filter(s => s.unique_key === query.value);
+          events = events.filter(e => e.unique_key === query.value);
+          gachas = gachas.filter(g => g.unique_key === query.value);
+          guides = guides.filter(g => g.unique_key === query.value);
+          items = items.filter(i => i.unique_key === query.value);
+          episodes = episodes.filter(e => e.unique_key === query.value);
+          break;
+
+        case 'stats':
+          // Stats only apply to characters and swimsuits
+          characters = characters.filter(c => matchesStatsQuery(c.stats, query));
+          swimsuits = swimsuits.filter(s => matchesStatsQuery(s.stats, query));
+          // Clear other types as they don't have stats
+          events = [];
+          gachas = [];
+          guides = [];
+          items = [];
+          episodes = [];
+          break;
+
+        case 'date':
+          // Date only applies to events and gachas
+          events = events.filter(e => matchesDateQuery(e.start_date, e.end_date, query));
+          gachas = gachas.filter(g => matchesDateQuery(g.start_date, g.end_date, query));
+          // Clear other types as they don't have date ranges
+          characters = [];
+          swimsuits = [];
+          guides = [];
+          items = [];
+          episodes = [];
+          break;
+      }
+    }
+
+    // Transform and limit results
+    const result: AdvancedSearchResults = {
+      characters: characters.slice(0, maxPerType).map(c => this.transformCharacter(c, language)),
+      swimsuits: swimsuits.slice(0, maxPerType).map(s => this.transformSwimsuit(s, language)),
+      events: events.slice(0, maxPerType).map(e => this.transformEvent(e, language)),
+      gachas: gachas.slice(0, maxPerType).map(g => this.transformGacha(g, language)),
+      guides: guides.slice(0, maxPerType).map(g => this.transformGuide(g, language)),
+      items: items.slice(0, maxPerType).map(i => this.transformItem(i, language)),
+      episodes: episodes.slice(0, maxPerType).map(e => this.transformEpisode(e, language)),
+      parsedQueries: queries,
+      errors,
+      get total() {
+        return (
+          this.characters.length +
+          this.swimsuits.length +
+          this.events.length +
+          this.gachas.length +
+          this.guides.length +
+          this.items.length +
+          this.episodes.length
+        );
+      },
+    };
+
+    return result;
   }
 
   private createEmptyResults(): SearchResults {
@@ -223,7 +632,7 @@ export class SearchService {
 
   /**
    * Transform Character to SearchResult
-   * Displays: image, name, type (SSR/SR/R)
+   * Displays: image, name
    */
   private transformCharacter(char: Character, language: LanguageCode): SearchResult {
     return {
@@ -232,8 +641,6 @@ export class SearchService {
       unique_key: char.unique_key,
       title: getLocalizedValue(char.name, language),
       image: char.image,
-      badge: char.type,
-      badgeVariant: this.getRarityBadgeVariant(char.type),
       url: `/girls/${char.unique_key}`,
     };
   }

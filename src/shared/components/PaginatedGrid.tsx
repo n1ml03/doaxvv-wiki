@@ -15,6 +15,7 @@ import {
 } from "@/shared/components/ui/pagination";
 import { usePagination } from "@/shared/hooks/usePagination";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/shared/hooks/useTranslation";
 
 export interface PaginatedGridProps<T> {
   /** All items to paginate */
@@ -48,6 +49,7 @@ export function PaginatedGrid<T>({
   emptyState,
   className,
 }: PaginatedGridProps<T>) {
+  const { t } = useTranslation();
   const pagination = usePagination({
     totalItems: items.length,
     itemsPerPage,
@@ -75,10 +77,17 @@ export function PaginatedGrid<T>({
       {showInfo && items.length > 0 && (
         <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground">
           <span>
-            Showing {pagination.startIndex + 1}-{Math.min(pagination.endIndex, items.length)} of {items.length}
+            {t('pagination.showing')
+              .replace('{start}', (pagination.startIndex + 1).toString())
+              .replace('{end}', Math.min(pagination.endIndex, items.length).toString())
+              .replace('{total}', items.length.toString())}
           </span>
           {pagination.totalPages > 1 && (
-            <span>Page {pagination.currentPage} of {pagination.totalPages}</span>
+            <span>
+              {t('pagination.page')
+                .replace('{current}', pagination.currentPage.toString())
+                .replace('{total}', pagination.totalPages.toString())}
+            </span>
           )}
         </div>
       )}

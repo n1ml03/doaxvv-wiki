@@ -22,7 +22,7 @@ import {
   type VirtualListResult,
   type ChunkProgress,
 } from './utils/performance';
-import type { Guide, Character, Event, Festival, Gacha, Swimsuit, Item, Episode, Category, Tag, Tool, BaseContent, SwimsuitSkill } from './schemas/content.schema';
+import type { Guide, Character, Event, Festival, Gacha, Swimsuit, Item, Episode, Category, Tag, Tool, Accessory, Mission, BaseContent, SwimsuitSkill } from './schemas/content.schema';
 import type { LocalizedString } from '../shared/types/localization';
 
 /**
@@ -78,6 +78,8 @@ import tagsCSV from './data/tags.csv?raw';
 import gachasCSV from './data/gachas.csv?raw';
 import episodesCSV from './data/episodes.csv?raw';
 import toolsCSV from './data/tools.csv?raw';
+import accessoriesCSV from './data/accessories.csv?raw';
+import missionsCSV from './data/missions.csv?raw';
 
 /**
  * Helper function to create a LocalizedString from CSV fields
@@ -119,7 +121,6 @@ export function transformCharacter(raw: any): Character {
     author: raw.author,
     status: raw.status,
     related_ids: raw.related_ids ? raw.related_ids.split('|') : [],
-    type: raw.type,
     image: raw.image,
     stats: typeof raw.stats === 'string' ? JSON.parse(raw.stats) : raw.stats,
     // LocalizedString fields
@@ -386,6 +387,72 @@ export function transformTool(raw: any): Tool {
   };
 }
 
+/**
+ * Transform raw accessory data to include LocalizedString fields
+ */
+export function transformAccessory(raw: any): Accessory {
+  // Parse stats from JSON string if needed
+  let stats: Accessory['stats'] | undefined;
+  if (raw.stats) {
+    try {
+      stats = typeof raw.stats === 'string' ? JSON.parse(raw.stats) : raw.stats;
+    } catch {
+      stats = undefined;
+    }
+  }
+
+  return {
+    id: parseInt(raw.id) || 0,
+    title: raw.name_en || raw.title || '',
+    unique_key: raw.unique_key,
+    summary: raw.description_en || raw.summary || '',
+    category: raw.category || 'Accessory',
+    tags: raw.tags ? raw.tags.split('|') : ['Accessory'],
+    updated_at: raw.updated_at,
+    author: raw.author,
+    status: raw.status,
+    related_ids: raw.related_ids ? raw.related_ids.split('|') : [],
+    rarity: raw.rarity as Accessory['rarity'],
+    character_ids: raw.character_ids ? raw.character_ids.split('|') : [],
+    image: raw.image,
+    stats,
+    obtain_method: raw.obtain_method as Accessory['obtain_method'],
+    obtain_source: raw.obtain_source || undefined,
+    // LocalizedString fields
+    name: createLocalizedStringFromCSV(raw, 'name'),
+    description: raw.description_en ? createLocalizedStringFromCSV(raw, 'description') : undefined,
+    effect: raw.effect_en ? createLocalizedStringFromCSV(raw, 'effect') : undefined,
+  };
+}
+
+/**
+ * Transform raw mission data to include LocalizedString fields
+ */
+export function transformMission(raw: any): Mission {
+  return {
+    id: parseInt(raw.id) || 0,
+    title: raw.name_en || raw.title || '',
+    unique_key: raw.unique_key,
+    summary: raw.description_en || raw.summary || '',
+    category: raw.category || 'Mission',
+    tags: raw.tags ? raw.tags.split('|') : ['Mission'],
+    updated_at: raw.updated_at,
+    author: raw.author,
+    status: raw.status,
+    related_ids: raw.related_ids ? raw.related_ids.split('|') : [],
+    type: raw.type as Mission['type'],
+    mission_status: raw.mission_status as Mission['mission_status'],
+    event_id: raw.event_id || undefined,
+    image: raw.image || undefined,
+    objectives: raw.objectives ? raw.objectives.split('|') : [],
+    rewards: raw.rewards ? raw.rewards.split('|') : [],
+    requirements: raw.requirements ? raw.requirements.split('|') : [],
+    // LocalizedString fields
+    name: createLocalizedStringFromCSV(raw, 'name'),
+    description: raw.description_en ? createLocalizedStringFromCSV(raw, 'description') : undefined,
+  };
+}
+
 
 /**
  * Content type identifiers for the loader
@@ -401,7 +468,9 @@ export type ContentType =
   | 'categories'
   | 'tags'
   | 'festivals'
-  | 'tools';
+  | 'tools'
+  | 'accessories'
+  | 'missions';
 
 /**
  * Error thrown when content loading fails
@@ -459,6 +528,10 @@ export class ContentLoader {
   private tagsByKey: Map<string, Tag> = new Map();
   private toolsByKey: Map<string, Tool> = new Map();
   private toolsByIndex: Map<number, Tool> = new Map();
+  private accessoriesByKey: Map<string, Accessory> = new Map();
+  private accessoriesByIndex: Map<number, Accessory> = new Map();
+  private missionsByKey: Map<string, Mission> = new Map();
+  private missionsByIndex: Map<number, Mission> = new Map();
 
   private constructor(config: ContentLoaderConfig = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -699,6 +772,8 @@ export class ContentLoader {
       this.loadCategories(),
       this.loadTags(),
       this.loadTools(),
+      this.loadAccessories(),
+      this.loadMissions(),
     ]);
   }
 
@@ -856,6 +931,34 @@ export class ContentLoader {
     return tools;
   }
 
+  async loadAccessories(): Promise<Accessory[]> {
+    const accessories = await this.loadContent('accessories', accessoriesCSV, transformAccessory);
+    
+    // Build O(1) lookup maps
+    this.accessoriesByKey.clear();
+    this.accessoriesByIndex.clear();
+    for (const accessory of accessories) {
+      this.accessoriesByKey.set(accessory.unique_key, accessory);
+      this.accessoriesByIndex.set(accessory.id, accessory);
+    }
+    
+    return accessories;
+  }
+
+  async loadMissions(): Promise<Mission[]> {
+    const missions = await this.loadContent('missions', missionsCSV, transformMission);
+    
+    // Build O(1) lookup maps
+    this.missionsByKey.clear();
+    this.missionsByIndex.clear();
+    for (const mission of missions) {
+      this.missionsByKey.set(mission.unique_key, mission);
+      this.missionsByIndex.set(mission.id, mission);
+    }
+    
+    return missions;
+  }
+
 
   // ============================================================================
   // Synchronous getters (return cached data or empty array)
@@ -905,6 +1008,14 @@ export class ContentLoader {
     return this.getCached<Tool>('tools') || [];
   }
 
+  getAccessories(): Accessory[] {
+    return this.getCached<Accessory>('accessories') || [];
+  }
+
+  getMissions(): Mission[] {
+    return this.getCached<Mission>('missions') || [];
+  }
+
   // ============================================================================
   // Find by ID methods - O(1) using lookup maps
   // ============================================================================
@@ -949,6 +1060,14 @@ export class ContentLoader {
 
   getToolById(id: number): Tool | undefined {
     return this.toolsByIndex.get(id);
+  }
+
+  getAccessoryById(id: number): Accessory | undefined {
+    return this.accessoriesByIndex.get(id);
+  }
+
+  getMissionById(id: number): Mission | undefined {
+    return this.missionsByIndex.get(id);
   }
 
   // ============================================================================
@@ -997,6 +1116,14 @@ export class ContentLoader {
 
   getToolByUniqueKey(uniqueKey: string): Tool | undefined {
     return this.toolsByKey.get(uniqueKey);
+  }
+
+  getAccessoryByKey(uniqueKey: string): Accessory | undefined {
+    return this.accessoriesByKey.get(uniqueKey);
+  }
+
+  getMissionByKey(uniqueKey: string): Mission | undefined {
+    return this.missionsByKey.get(uniqueKey);
   }
 
   // ============================================================================
@@ -1051,7 +1178,8 @@ export class ContentLoader {
      this.eventsByKey, this.eventsByIndex, this.guidesByKey, this.guidesByIndex,
      this.itemsByKey, this.itemsByIndex, this.episodesByKey, this.episodesByIndex,
      this.gachasByKey, this.gachasByIndex, this.festivalsByKey, this.categoriesByKey,
-     this.tagsByKey, this.toolsByKey, this.toolsByIndex].forEach(m => m.clear());
+     this.tagsByKey, this.toolsByKey, this.toolsByIndex, this.accessoriesByKey,
+     this.accessoriesByIndex, this.missionsByKey, this.missionsByIndex].forEach(m => m.clear());
     
     // Clear IndexedDB if enabled
     this.idbCache?.clear().catch(() => {});

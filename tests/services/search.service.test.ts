@@ -59,7 +59,6 @@ describe('SearchService', () => {
             jp: 'かすみ',
           } as LocalizedString,
           image: '/images/kasumi.jpg',
-          type: 'SSR',
           status: 'published',
           category: 'character',
           tags: [],
@@ -75,7 +74,6 @@ describe('SearchService', () => {
             jp: 'マリー・ローズ',
           } as LocalizedString,
           image: '/images/marie.jpg',
-          type: 'SR',
           status: 'published',
           category: 'character',
           tags: [],
@@ -120,18 +118,6 @@ describe('SearchService', () => {
     it('should respect maxPerType limit', () => {
       const results = searchService.search('a', { maxPerType: 1 });
       expect(results.characters.length).toBeLessThanOrEqual(1);
-    });
-
-    it('should include correct badge variant for SSR', () => {
-      const results = searchService.search('Kasumi');
-      expect(results.characters[0].badge).toBe('SSR');
-      expect(results.characters[0].badgeVariant).toBe('default');
-    });
-
-    it('should include correct badge variant for SR', () => {
-      const results = searchService.search('Marie');
-      expect(results.characters[0].badge).toBe('SR');
-      expect(results.characters[0].badgeVariant).toBe('secondary');
     });
   });
 
@@ -266,7 +252,6 @@ describe('SearchService', () => {
           title: 'Test Character',
           name: { en: 'Test Character', jp: 'テスト' } as LocalizedString,
           image: '/images/char.jpg',
-          type: 'SSR',
           status: 'published',
           category: 'character',
           tags: [],
@@ -336,7 +321,6 @@ describe('SearchService', () => {
             cn: '霞',
           } as LocalizedString,
           image: '/images/kasumi.jpg',
-          type: 'SSR',
           status: 'published',
           category: 'character',
           tags: [],
@@ -388,7 +372,6 @@ describe('SearchService', () => {
             jp: 'マリー・ローズ',
           } as LocalizedString,
           image: '/images/marie.jpg',
-          type: 'SSR',
           status: 'published',
           category: 'character',
           tags: [],
@@ -445,7 +428,6 @@ describe('SearchService', () => {
           jp: `キャラ${i}`,
         } as LocalizedString,
         image: `/images/char-${i}.jpg`,
-        type: 'SSR',
         status: 'published',
         category: 'character',
         tags: [],
@@ -484,77 +466,5 @@ describe('SearchService', () => {
     });
   });
 
-  describe('Badge Variants', () => {
-    beforeEach(() => {
-      const mockCharacters: Character[] = [
-        {
-          id: 1,
-          unique_key: 'ssr-char',
-          title: 'SSR Character',
-          name: { en: 'SSR Character', jp: 'SSR' } as LocalizedString,
-          image: '/images/ssr.jpg',
-          type: 'SSR',
-          status: 'published',
-          category: 'character',
-          tags: [],
-          updated_at: '2024-01-01',
-          author: 'admin',
-        } as unknown as Character,
-        {
-          id: 2,
-          unique_key: 'sr-char',
-          title: 'SR Character',
-          name: { en: 'SR Character', jp: 'SR' } as LocalizedString,
-          image: '/images/sr.jpg',
-          type: 'SR',
-          status: 'published',
-          category: 'character',
-          tags: [],
-          updated_at: '2024-01-01',
-          author: 'admin',
-        } as unknown as Character,
-        {
-          id: 3,
-          unique_key: 'r-char',
-          title: 'R Character',
-          name: { en: 'R Character', jp: 'R' } as LocalizedString,
-          image: '/images/r.jpg',
-          type: 'R',
-          status: 'published',
-          category: 'character',
-          tags: [],
-          updated_at: '2024-01-01',
-          author: 'admin',
-        } as unknown as Character,
-      ];
 
-      vi.mocked(contentLoader.getCharacters).mockReturnValue(mockCharacters);
-      vi.mocked(contentLoader.getSwimsuits).mockReturnValue([]);
-      vi.mocked(contentLoader.getEvents).mockReturnValue([]);
-      vi.mocked(contentLoader.getGachas).mockReturnValue([]);
-      vi.mocked(contentLoader.getGuides).mockReturnValue([]);
-      vi.mocked(contentLoader.getItems).mockReturnValue([]);
-      vi.mocked(contentLoader.getEpisodes).mockReturnValue([]);
-    });
-
-    it('should assign correct badge variant for R type', () => {
-      const results = searchService.search('Character');
-      const rChar = results.characters.find(c => c.badge === 'R');
-      expect(rChar).toBeDefined();
-      expect(rChar?.badgeVariant).toBe('outline');
-    });
-
-    it('should handle all character types', () => {
-      const results = searchService.search('Character');
-      expect(results.characters).toHaveLength(3);
-      
-      const ssrChar = results.characters.find(c => c.badge === 'SSR');
-      const srChar = results.characters.find(c => c.badge === 'SR');
-      const rChar = results.characters.find(c => c.badge === 'R');
-      
-      expect(ssrChar?.badgeVariant).toBe('default');
-      expect(srChar?.badgeVariant).toBe('secondary');
-      expect(rChar?.badgeVariant).toBe('outline');
-    });
-  });
 });

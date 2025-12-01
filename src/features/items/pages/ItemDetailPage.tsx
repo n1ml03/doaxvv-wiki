@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, RelatedContent, ResponsiveContainer, DatasetImage, UniqueKeyDisplay } from "@/shared/components";
+import { Breadcrumb, RelatedContent, ResponsiveContainer, DatasetImage, UniqueKeyDisplay, LocalizedText } from "@/shared/components";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -77,16 +77,6 @@ const ItemDetailPage = () => {
     );
   }
 
-  const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case "SSR": return "bg-ssr text-ssr-foreground";
-      case "SR": return "bg-sr text-sr-foreground";
-      case "R": return "bg-r text-r-foreground";
-      case "N": return "bg-muted text-muted-foreground";
-      default: return "bg-muted text-muted-foreground";
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -110,9 +100,6 @@ const ItemDetailPage = () => {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute top-3 left-3 sm:top-4 sm:left-4 flex flex-col gap-2">
-                    <Badge className={getRarityColor(item.rarity)}>
-                      {item.rarity}
-                    </Badge>
                     <Badge className="bg-primary/80 text-primary-foreground">
                       <Package className="h-3 w-3 mr-1" />
                       {t(`itemType.${item.type.toLowerCase()}`)}
@@ -127,9 +114,15 @@ const ItemDetailPage = () => {
             <div className="lg:col-span-2 space-y-4 sm:space-y-6">
               <div>
                 <div className="flex items-center gap-2 sm:gap-3 mb-2">
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">{item.title}</h1>
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">
+                    <LocalizedText localized={item.name} showIndicator />
+                  </h1>
                 </div>
-                <p className="text-base sm:text-lg text-muted-foreground mb-4">{item.summary}</p>
+                {item.description && (
+                  <p className="text-base sm:text-lg text-muted-foreground mb-4">
+                    <LocalizedText localized={item.description} showIndicator />
+                  </p>
+                )}
               </div>
 
             {/* Description */}
@@ -138,7 +131,9 @@ const ItemDetailPage = () => {
                 <CardTitle className="text-xl">{t('itemDetail.description')}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground leading-relaxed">{item.summary}</p>
+                <p className="text-muted-foreground leading-relaxed">
+                  {item.description && <LocalizedText localized={item.description} showIndicator />}
+                </p>
               </CardContent>
             </Card>
 
@@ -158,9 +153,6 @@ const ItemDetailPage = () => {
                   </div>
                   <div className="space-y-1">
                     <div className="text-sm text-muted-foreground">{t('itemDetail.rarity')}</div>
-                    <Badge className={getRarityColor(item.rarity)}>
-                      {item.rarity}
-                    </Badge>
                   </div>
                   <div className="space-y-1">
                     <div className="text-sm text-muted-foreground">{t('itemDetail.updated')}</div>
