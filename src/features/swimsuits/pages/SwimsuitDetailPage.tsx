@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, RelatedContent, LocalizedText, ResponsiveContainer, DatasetImage, UniqueKeyDisplay } from "@/shared/components";
+import { Breadcrumb, RelatedContent, LocalizedText, ResponsiveContainer, DatasetImage, UniqueKeyDisplay, ScrollToTop } from "@/shared/components";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -327,6 +327,8 @@ const SwimsuitDetailPage = () => {
           />
         </ResponsiveContainer>
       </main>
+
+      <ScrollToTop />
 
       {/* Image Enlargement Modal */}
       {isImageEnlarged && (

@@ -7,6 +7,7 @@ import { CurrentEvents } from "@/features/events";
 import { FeaturedCharacters } from "@/features/characters";
 import { PopularGuides } from "@/features/guides";
 import { ResponsiveContainer } from "@/shared/components/responsive";
+import { ScrollToTop } from "@/shared/components";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Sparkles, Users, BookOpen, Calendar, Gift, Star } from "lucide-react";
@@ -100,7 +101,7 @@ const HomePage = () => {
             <FeaturedCharacters />
           </div>
 
-                    {/* Current Events */}
+          {/* Current Events */}
           <div className="mt-8 sm:mt-12">
             <CurrentEvents />
           </div>
@@ -166,6 +167,8 @@ const HomePage = () => {
               </div>
             </div>
           </div>
+
+          <ScrollToTop />
         </ResponsiveContainer>
       </main>
       <Footer />

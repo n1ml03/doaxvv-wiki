@@ -11,6 +11,7 @@ import {
   Wrench,
   Gem,
   Target,
+  HelpCircle,
 } from "lucide-react";
 import { NavGroup } from "@/shared/types/navigation";
 
@@ -49,6 +50,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { path: "/guides", label: "Guides", icon: BookOpen },
       { path: "/tools", label: "Tools", icon: Wrench },
+      { path: "/quizzes", label: "Quizzes", icon: HelpCircle },
     ],
   },
 ];

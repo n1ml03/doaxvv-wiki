@@ -16,6 +16,10 @@ export { useTools } from './useTools';
 export { useGuideContent } from './useGuideContent';
 export type { UseGuideContentResult } from './useGuideContent';
 
+// Quiz content hook
+export { useQuizContent } from './useQuizContent';
+export type { UseQuizContentResult } from './useQuizContent';
+
 // Image loading hooks
 export { useImage, useDatasetPath, useImageLoader, usePreloadImages } from './useImageLoader';
 export type { UseImageOptions, UseImageResult } from './useImageLoader';

@@ -31,3 +31,4 @@ export {
 } from './FilterPresets';
 export { UniqueKeyDisplay } from './UniqueKeyDisplay';
 export { MarkdownRenderer } from './MarkdownRenderer';
+export { ScrollToTop } from './ScrollToTop';

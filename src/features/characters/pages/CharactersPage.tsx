@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, SearchFilter, LocalizedText, ResponsiveContainer, DatasetImage } from "@/shared/components";
+import { Breadcrumb, SearchFilter, LocalizedText, ResponsiveContainer, DatasetImage, ScrollToTop } from "@/shared/components";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
@@ -305,6 +305,8 @@ const CharactersPage = () => {
               <p className="text-base sm:text-lg text-muted-foreground">{t('characters.noResults')}</p>
             </div>
           )}
+
+          <ScrollToTop />
         </ResponsiveContainer>
       </main>
     </div>

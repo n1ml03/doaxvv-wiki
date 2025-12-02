@@ -72,20 +72,34 @@ const CurrentEvents = () => {
     }
   }, [events.length, totalWidth]);
 
+  // Handle vertical mouse wheel to scroll horizontally
+  const handleWheel = useCallback((e: WheelEvent) => {
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer) return;
+    
+    // Only handle vertical scroll (deltaY) and convert to horizontal
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.preventDefault();
+      scrollContainer.scrollLeft += e.deltaY;
+    }
+  }, []);
+
   // Infinite scroll loop handler with passive listener
   useEffect(() => {
     const scrollContainer = scrollRef.current;
     if (!scrollContainer || events.length === 0) return;
 
     scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    scrollContainer.addEventListener('wheel', handleWheel, { passive: false });
     
     return () => {
       scrollContainer.removeEventListener('scroll', handleScroll);
+      scrollContainer.removeEventListener('wheel', handleWheel);
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
       }
     };
-  }, [events.length, handleScroll]);
+  }, [events.length, handleScroll, handleWheel]);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, SearchFilter, ResponsiveContainer, DatasetImage, PaginatedGrid } from "@/shared/components";
+import { Breadcrumb, SearchFilter, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop } from "@/shared/components";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -223,6 +223,7 @@ const EventsPage = () => {
               );
             }}
           />
+          <ScrollToTop />
         </ResponsiveContainer>
       </main>
     </div>

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, SearchFilter, ResponsiveContainer, DatasetImage, PaginatedGrid } from "@/shared/components";
+import { Breadcrumb, SearchFilter, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop } from "@/shared/components";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Package } from "lucide-react";
@@ -165,6 +165,7 @@ const ItemsPage = () => {
               </Link>
             )}
           />
+          <ScrollToTop />
         </ResponsiveContainer>
       </main>
     </div>

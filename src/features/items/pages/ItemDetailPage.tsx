@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, RelatedContent, ResponsiveContainer, DatasetImage, UniqueKeyDisplay, LocalizedText } from "@/shared/components";
+import { Breadcrumb, RelatedContent, ResponsiveContainer, DatasetImage, UniqueKeyDisplay, LocalizedText, ScrollToTop } from "@/shared/components";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -211,6 +211,8 @@ const ItemDetailPage = () => {
               viewAllLabel={t('itemDetail.viewAllGuides')}
             />
           )}
+
+          <ScrollToTop />
         </ResponsiveContainer>
       </main>
     </div>

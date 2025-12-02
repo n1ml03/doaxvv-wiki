@@ -186,11 +186,21 @@ export function HeroSearch({ placeholder = 'Search characters, events, swimsuits
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-4">
+      {/* Backdrop overlay to block clicks when dropdown is open */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => {
+            setIsOpen(false);
+            setFocusedIndex(-1);
+          }}
+        />
+      )}
       {/* Main Search Container */}
       <div 
         ref={containerRef} 
         className={cn(
-          "relative transition-all duration-300",
+          "relative transition-all duration-300 z-50",
           isFocused && "scale-[1.02]"
         )}
       >

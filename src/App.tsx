@@ -30,6 +30,10 @@ const AccessoriesPage = lazy(() => import("@/features/accessories").then(m => ({
 const AccessoryDetailPage = lazy(() => import("@/features/accessories").then(m => ({ default: m.AccessoryDetailPage })));
 const MissionsPage = lazy(() => import("@/features/missions").then(m => ({ default: m.MissionsPage })));
 const MissionDetailPage = lazy(() => import("@/features/missions").then(m => ({ default: m.MissionDetailPage })));
+const QuizzesPage = lazy(() => import("@/features/quiz").then(m => ({ default: m.QuizzesPage })));
+const QuizDetailPage = lazy(() => import("@/features/quiz").then(m => ({ default: m.QuizDetailPage })));
+const QuizTakingPage = lazy(() => import("@/features/quiz").then(m => ({ default: m.QuizTakingPage })));
+const QuizResultPage = lazy(() => import("@/features/quiz").then(m => ({ default: m.QuizResultPage })));
 const SearchResultsPage = lazy(() => import("@/features/search").then(m => ({ default: m.SearchResultsPage })));
 const NotFoundPage = lazy(() => import("@/shared/pages").then(m => ({ default: m.NotFoundPage })));
 
@@ -78,6 +82,10 @@ const App = () => (
             <Route path="/accessories/:unique_key" element={<AccessoryDetailPage />} />
             <Route path="/missions" element={<MissionsPage />} />
             <Route path="/missions/:unique_key" element={<MissionDetailPage />} />
+            <Route path="/quizzes" element={<QuizzesPage />} />
+            <Route path="/quizzes/:unique_key" element={<QuizDetailPage />} />
+            <Route path="/quizzes/:unique_key/take" element={<QuizTakingPage />} />
+            <Route path="/quizzes/:unique_key/result" element={<QuizResultPage />} />
             <Route path="/search" element={<SearchResultsPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFoundPage />} />

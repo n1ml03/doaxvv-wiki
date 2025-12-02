@@ -49,7 +49,7 @@ async function measureUIBlocking() {
     console.log(`Sync parseCSV: Main thread blocked for ${syncBlockTime.toFixed(2)}ms CONTINUOUSLY`);
     
     // Test 2: Async chunked parsing - measures max blocking per chunk
-    let maxChunkTime = 0;
+    const maxChunkTime = 0;
     let chunkCount = 0;
     let totalAsyncTime = 0;
     

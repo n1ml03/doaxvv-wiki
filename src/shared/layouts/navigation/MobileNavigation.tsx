@@ -113,7 +113,15 @@ export function MobileNavigation({
             {/* Home link */}
             <Link
               to="/"
-              onClick={handleLinkClick}
+              onClick={(e) => {
+                if (currentPath === "/") {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  window.location.reload();
+                } else {
+                  handleLinkClick();
+                }
+              }}
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium",
                 "min-h-[44px] transition-colors",
@@ -172,7 +180,16 @@ export function MobileNavigation({
                             <li key={item.path}>
                               <Link
                                 to={item.path}
-                                onClick={handleLinkClick}
+                                onClick={(e) => {
+                                  if (itemIsActive) {
+                                    e.preventDefault();
+                                    onOpenChange(false);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    window.location.reload();
+                                  } else {
+                                    handleLinkClick();
+                                  }
+                                }}
                                 className={cn(
                                   "flex items-center gap-3 rounded-md px-3 py-3 text-sm",
                                   "min-h-[44px] transition-colors",

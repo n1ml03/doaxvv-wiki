@@ -84,6 +84,13 @@ export function DesktopNavigation({ groups }: DesktopNavigationProps) {
                           <NavigationMenuLink asChild>
                             <Link
                               to={item.path}
+                              onClick={(e) => {
+                                if (itemIsActive) {
+                                  e.preventDefault();
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                  window.location.reload();
+                                }
+                              }}
                               className={cn(
                                 "flex items-start gap-3 rounded-xl p-3 transition-all duration-200",
                                 "hover:bg-accent hover:shadow-sm group select-none",

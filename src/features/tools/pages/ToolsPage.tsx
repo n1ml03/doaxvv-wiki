@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, SearchFilter, ResponsiveContainer, DatasetImage } from "@/shared/components";
+import { Breadcrumb, SearchFilter, ResponsiveContainer, DatasetImage, ScrollToTop } from "@/shared/components";
 import { Card, CardContent, CardDescription, CardHeader } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -191,6 +191,8 @@ const ToolsPage = () => {
               <p className="text-base sm:text-lg text-muted-foreground">{t('tools.noResults')}</p>
             </div>
           )}
+
+          <ScrollToTop />
         </ResponsiveContainer>
       </main>
     </div>

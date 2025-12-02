@@ -172,7 +172,7 @@ export class LRUCache<T = unknown> {
     this.stats.totalSize = 0;
     this.stats.entryCount = 0;
     if (this.options.persistToStorage) {
-      try { localStorage.removeItem(this.options.storageKey); } catch {}
+      try { localStorage.removeItem(this.options.storageKey); } catch { /* ignore storage errors */ }
     }
   }
 
@@ -222,7 +222,7 @@ export class LRUCache<T = unknown> {
     try {
       const data = Array.from(this.cache.entries());
       localStorage.setItem(this.options.storageKey, JSON.stringify(data));
-    } catch {}
+    } catch { /* ignore storage errors */ }
   }
 
   private loadFromStorage(): void {
@@ -239,7 +239,7 @@ export class LRUCache<T = unknown> {
         }
         this.stats.entryCount = this.cache.size;
       }
-    } catch {}
+    } catch { /* ignore storage errors */ }
   }
 }
 
@@ -349,8 +349,8 @@ export function getVirtualListItems<T>(
   const totalHeight = data.length * itemHeight;
   const visibleCount = Math.ceil(containerHeight / itemHeight);
   
-  let startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
-  let endIndex = Math.min(data.length, startIndex + visibleCount + overscan * 2);
+  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
+  const endIndex = Math.min(data.length, startIndex + visibleCount + overscan * 2);
 
   return {
     visibleItems: data.slice(startIndex, endIndex),
@@ -451,7 +451,7 @@ export class IndexedDBCache<T = unknown> {
         request.onerror = () => reject(request.error);
         request.onsuccess = () => resolve();
       });
-    } catch {}
+    } catch { /* ignore IndexedDB errors */ }
   }
 
   async clear(): Promise<void> {
@@ -463,7 +463,7 @@ export class IndexedDBCache<T = unknown> {
         request.onerror = () => reject(request.error);
         request.onsuccess = () => resolve();
       });
-    } catch {}
+    } catch { /* ignore IndexedDB errors */ }
   }
 
   close(): void {

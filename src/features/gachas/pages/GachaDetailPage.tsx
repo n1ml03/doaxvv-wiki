@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import Header from "@/shared/layouts/Header";
-import { Breadcrumb, LocalizedText, DatasetImage, UniqueKeyDisplay } from "@/shared/components";
+import { Breadcrumb, LocalizedText, DatasetImage, UniqueKeyDisplay, ScrollToTop } from "@/shared/components";
 import { ResponsiveContainer } from "@/shared/components/responsive";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
@@ -623,6 +623,8 @@ const GachaDetailPage = () => {
                 </Card>
               </TabsContent>
             </Tabs>
+
+            <ScrollToTop />
           </div>
         </ResponsiveContainer>
       </main>

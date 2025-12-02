@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, DatasetImage, PaginatedGrid } from "@/shared/components";
+import { Breadcrumb, DatasetImage, PaginatedGrid, ScrollToTop } from "@/shared/components";
 import { SearchFilter } from "@/shared/components";
 import { ResponsiveContainer } from "@/shared/components/responsive";
 import { Card, CardContent } from "@/shared/components/ui/card";
@@ -269,6 +269,7 @@ const GachasPage = () => {
               );
             }}
           />
+          <ScrollToTop />
         </ResponsiveContainer>
       </main>
     </div>

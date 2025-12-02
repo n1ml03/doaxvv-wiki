@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, SearchFilter, LocalizedText, ResponsiveContainer, DatasetImage } from "@/shared/components";
+import { Breadcrumb, SearchFilter, LocalizedText, ResponsiveContainer, DatasetImage, ScrollToTop } from "@/shared/components";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -231,6 +231,8 @@ const FestivalsPage = () => {
               <p className="text-base sm:text-lg text-muted-foreground">{t('festivals.noResults')}</p>
             </div>
           )}
+
+          <ScrollToTop />
         </ResponsiveContainer>
       </main>
     </div>

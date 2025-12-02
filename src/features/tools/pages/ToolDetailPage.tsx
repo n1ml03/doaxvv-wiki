@@ -1,11 +1,11 @@
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, ResponsiveContainer, DatasetImage, MarkdownRenderer } from "@/shared/components";
+import { Breadcrumb, ResponsiveContainer, DatasetImage, MarkdownRenderer, ScrollToTop } from "@/shared/components";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
-import { User, Calendar, List, ChevronUp, Wrench, Copy, Check, FolderOpen, Tag } from "lucide-react";
+import { User, Calendar, List, Wrench, Copy, Check, FolderOpen, Tag } from "lucide-react";
 import { contentLoader, useGuideContent } from "@/content";
 import { useCategories } from "@/content/hooks";
 import type { Tool } from "@/content";
@@ -23,7 +23,6 @@ const ToolDetailPage = () => {
   const [tool, setTool] = useState<Tool | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<string>("");
-  const [showScrollTop, setShowScrollTop] = useState(false);
   const [copied, setCopied] = useState(false);
 
   // Load tool markdown content
@@ -39,24 +38,12 @@ const ToolDetailPage = () => {
     loadContent();
   }, [unique_key]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 400);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
       setActiveSection(sectionId);
     }
-  };
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleCopyPath = async () => {
@@ -320,16 +307,7 @@ const ToolDetailPage = () => {
             </div>
           </article>
 
-          {/* Scroll to Top Button */}
-          {showScrollTop && (
-            <button
-              onClick={scrollToTop}
-              className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 p-2.5 sm:p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all animate-fade-in z-50"
-              aria-label="Scroll to top"
-            >
-              <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5" />
-            </button>
-          )}
+          <ScrollToTop />
         </ResponsiveContainer>
       </main>
     </div>

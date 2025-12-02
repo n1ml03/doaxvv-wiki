@@ -176,13 +176,20 @@ const Header = () => {
         className="sticky top-0 z-50 w-full border-b border-border/40 bg-gradient-to-r from-background/95 via-background/90 to-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/60"
       >
         <div className="container flex h-16 items-center justify-between px-4 md:px-8">
-          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-md">
+          <a 
+            href="/" 
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.href = '/';
+            }}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-md"
+          >
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 shadow-md">
               <img src="/favicon.ico" alt="Logo" className="h-6 w-6" />
             </div>
             <span className="text-xl font-bold text-foreground hidden sm:inline">{t('app.title')}</span>
             <span className="text-xl font-bold text-foreground sm:hidden">{t('app.titleShort')}</span>
-          </Link>
+          </a>
 
           <DesktopNavigation groups={translatedGroups} />
 

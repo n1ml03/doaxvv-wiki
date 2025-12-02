@@ -22,7 +22,7 @@ import {
   type VirtualListResult,
   type ChunkProgress,
 } from './utils/performance';
-import type { Guide, Character, Event, Festival, Gacha, Swimsuit, Item, Episode, Category, Tag, Tool, Accessory, Mission, BaseContent, SwimsuitSkill } from './schemas/content.schema';
+import type { Guide, Character, Event, Festival, Gacha, Swimsuit, Item, Episode, Category, Tag, Tool, Accessory, Mission, BaseContent, SwimsuitSkill, Quiz } from './schemas/content.schema';
 import type { LocalizedString } from '../shared/types/localization';
 
 /**
@@ -80,6 +80,7 @@ import episodesCSV from './data/episodes.csv?raw';
 import toolsCSV from './data/tools.csv?raw';
 import accessoriesCSV from './data/accessories.csv?raw';
 import missionsCSV from './data/missions.csv?raw';
+import quizzesCSV from './data/quizzes.csv?raw';
 
 /**
  * Helper function to create a LocalizedString from CSV fields
@@ -453,6 +454,29 @@ export function transformMission(raw: any): Mission {
   };
 }
 
+/**
+ * Transform raw quiz data to include LocalizedString fields
+ */
+export function transformQuiz(raw: any): Quiz {
+  return {
+    id: parseInt(raw.id) || 0,
+    unique_key: raw.unique_key,
+    image: raw.image || '',
+    category: raw.category || '',
+    difficulty: (raw.difficulty as Quiz['difficulty']) || 'Easy',
+    time_limit: parseInt(raw.time_limit) || 0,
+    question_count: parseInt(raw.question_count) || 0,
+    questions_ref: raw.questions_ref || '',
+    status: (raw.status as Quiz['status']) || 'draft',
+    updated_at: raw.updated_at || '',
+    author: raw.author || '',
+    tags: raw.tags ? raw.tags.split('|') : [],
+    // LocalizedString fields
+    name: createLocalizedStringFromCSV(raw, 'name'),
+    description: createLocalizedStringFromCSV(raw, 'description'),
+  };
+}
+
 
 /**
  * Content type identifiers for the loader
@@ -470,7 +494,8 @@ export type ContentType =
   | 'festivals'
   | 'tools'
   | 'accessories'
-  | 'missions';
+  | 'missions'
+  | 'quizzes';
 
 /**
  * Error thrown when content loading fails
@@ -532,6 +557,8 @@ export class ContentLoader {
   private accessoriesByIndex: Map<number, Accessory> = new Map();
   private missionsByKey: Map<string, Mission> = new Map();
   private missionsByIndex: Map<number, Mission> = new Map();
+  private quizzesByKey: Map<string, Quiz> = new Map();
+  private quizzesByIndex: Map<number, Quiz> = new Map();
 
   private constructor(config: ContentLoaderConfig = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -774,6 +801,7 @@ export class ContentLoader {
       this.loadTools(),
       this.loadAccessories(),
       this.loadMissions(),
+      this.loadQuizzes(),
     ]);
   }
 
@@ -959,6 +987,20 @@ export class ContentLoader {
     return missions;
   }
 
+  async loadQuizzes(): Promise<Quiz[]> {
+    const quizzes = await this.loadContent('quizzes', quizzesCSV, transformQuiz);
+    
+    // Build O(1) lookup maps
+    this.quizzesByKey.clear();
+    this.quizzesByIndex.clear();
+    for (const quiz of quizzes) {
+      this.quizzesByKey.set(quiz.unique_key, quiz);
+      this.quizzesByIndex.set(quiz.id, quiz);
+    }
+    
+    return quizzes;
+  }
+
 
   // ============================================================================
   // Synchronous getters (return cached data or empty array)
@@ -1016,6 +1058,10 @@ export class ContentLoader {
     return this.getCached<Mission>('missions') || [];
   }
 
+  getQuizzes(): Quiz[] {
+    return this.getCached<Quiz>('quizzes') || [];
+  }
+
   // ============================================================================
   // Find by ID methods - O(1) using lookup maps
   // ============================================================================
@@ -1068,6 +1114,10 @@ export class ContentLoader {
 
   getMissionById(id: number): Mission | undefined {
     return this.missionsByIndex.get(id);
+  }
+
+  getQuizById(id: number): Quiz | undefined {
+    return this.quizzesByIndex.get(id);
   }
 
   // ============================================================================
@@ -1126,6 +1176,10 @@ export class ContentLoader {
     return this.missionsByKey.get(uniqueKey);
   }
 
+  getQuizByUniqueKey(uniqueKey: string): Quiz | undefined {
+    return this.quizzesByKey.get(uniqueKey);
+  }
+
   // ============================================================================
   // Utility methods
   // ============================================================================
@@ -1179,7 +1233,8 @@ export class ContentLoader {
      this.itemsByKey, this.itemsByIndex, this.episodesByKey, this.episodesByIndex,
      this.gachasByKey, this.gachasByIndex, this.festivalsByKey, this.categoriesByKey,
      this.tagsByKey, this.toolsByKey, this.toolsByIndex, this.accessoriesByKey,
-     this.accessoriesByIndex, this.missionsByKey, this.missionsByIndex].forEach(m => m.clear());
+     this.accessoriesByIndex, this.missionsByKey, this.missionsByIndex,
+     this.quizzesByKey, this.quizzesByIndex].forEach(m => m.clear());
     
     // Clear IndexedDB if enabled
     this.idbCache?.clear().catch(() => {});

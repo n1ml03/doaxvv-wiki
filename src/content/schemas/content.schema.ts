@@ -201,6 +201,36 @@ export interface Mission extends BaseContent {
   description?: LocalizedString;
 }
 
+/**
+ * Quiz difficulty levels
+ */
+export type QuizDifficulty = 'Easy' | 'Medium' | 'Hard';
+
+/**
+ * Quiz publication status
+ */
+export type QuizStatus = 'draft' | 'published' | 'archived';
+
+/**
+ * Quiz metadata from CSV
+ */
+export interface Quiz {
+  id: number;
+  unique_key: string;
+  name: LocalizedString;
+  description: LocalizedString;
+  image: string;
+  category: string;
+  difficulty: QuizDifficulty;
+  time_limit: number; // seconds, 0 for no limit
+  question_count: number;
+  questions_ref: string; // path to markdown file
+  status: QuizStatus;
+  updated_at: string;
+  author: string;
+  tags: string[];
+}
+
 // Validation rules
 export const REQUIRED_FIELDS: Record<string, string[]> = {
   base: ['id', 'title', 'unique_key', 'summary', 'category', 'tags', 'updated_at', 'author', 'status'],
@@ -215,7 +245,8 @@ export const REQUIRED_FIELDS: Record<string, string[]> = {
   tag: ['id', 'name', 'unique_key', 'usage_count'],
   tool: ['content_ref', 'image', 'localizedTitle', 'localizedSummary'],
   accessory: ['rarity', 'image', 'obtain_method', 'name'],
-  mission: ['type', 'mission_status', 'objectives', 'rewards', 'name']
+  mission: ['type', 'mission_status', 'objectives', 'rewards', 'name'],
+  quiz: ['id', 'unique_key', 'name', 'difficulty', 'questions_ref']
 };
 
 export const VALID_STATUSES = ['draft', 'published', 'archived'] as const;
@@ -232,3 +263,5 @@ export const VALID_ACCESSORY_RARITIES = ['SSR', 'SR', 'R', 'N'] as const;
 export const VALID_OBTAIN_METHODS = ['Event', 'Gacha', 'Shop', 'Quest', 'Login'] as const;
 export const VALID_MISSION_TYPES = ['Daily', 'Weekly', 'Challenge', 'Event', 'Story'] as const;
 export const VALID_MISSION_STATUSES = ['Active', 'Completed', 'Expired', 'Locked'] as const;
+export const VALID_QUIZ_DIFFICULTIES = ['Easy', 'Medium', 'Hard'] as const;
+export const VALID_QUIZ_STATUSES = ['draft', 'published', 'archived'] as const;

@@ -12,7 +12,7 @@ import { useState, useMemo, useEffect, useDeferredValue, useRef, useCallback } f
 import { useSearchParams, Link } from "react-router-dom";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import Header from "@/shared/layouts/Header";
-import { Breadcrumb } from "@/shared/components";
+import { Breadcrumb, ScrollToTop } from "@/shared/components";
 import { ResponsiveContainer } from "@/shared/components/responsive";
 import { Card } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
@@ -379,7 +379,7 @@ const SearchResultsPage = () => {
   useEffect(() => {
     const urlQuery = searchParams.get("q") || "";
     setQuery(urlQuery);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [searchParams]);
 
   // Search results using FlexSearch (O(1) performance)
@@ -615,6 +615,7 @@ const SearchResultsPage = () => {
           ) : (
             <PaginatedResults results={sortedResults} pagination={pagination} />
           )}
+          <ScrollToTop />
         </ResponsiveContainer>
       </main>
     </div>
