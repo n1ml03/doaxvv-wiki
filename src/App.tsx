@@ -1,10 +1,18 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { Toaster } from "@/shared/components/ui/toaster";
 import { Toaster as Sonner } from "@/shared/components/ui/sonner";
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
 import { ThemeProvider } from "@/shared/components/ThemeProvider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+
+// Scroll to top on route change
+const useScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+};
 
 // Lazy load feature pages
 const HomePage = lazy(() => import("@/features/home").then(m => ({ default: m.HomePage })));
@@ -57,8 +65,20 @@ const App = () => (
           v7_relativeSplatPath: true,
         }}
       >
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes>
+        <AppRoutes />
+      </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
+  </QueryClientProvider>
+);
+
+// Separate component to use hooks inside BrowserRouter
+const AppRoutes = () => {
+  useScrollToTop();
+  
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/girls" element={<CharactersPage />} />
             <Route path="/girls/:unique_key" element={<CharacterDetailPage />} />
@@ -90,11 +110,8 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
-        </Suspense>
-      </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+    </Suspense>
+  );
+};
 
 export default App;

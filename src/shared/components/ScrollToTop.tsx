@@ -25,10 +25,10 @@ export const ScrollToTop = ({ threshold = 400 }: ScrollToTopProps) => {
   return (
     <button
       onClick={scrollToTop}
-      className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 p-2.5 sm:p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all animate-fade-in z-50"
+      className="fixed bottom-6 right-4 sm:bottom-8 sm:right-6 md:bottom-8 md:right-8 p-3 sm:p-3.5 md:p-4 rounded-full bg-primary/90 backdrop-blur-sm text-primary-foreground shadow-xl hover:bg-primary hover:scale-105 active:scale-95 transition-all duration-200 animate-fade-in z-50 border border-primary-foreground/10"
       aria-label="Scroll to top"
     >
-      <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5" />
+      <ChevronUp className="h-5 w-5 sm:h-6 sm:w-6 md:h-6 md:w-6" />
     </button>
   );
 };

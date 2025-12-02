@@ -235,13 +235,8 @@ const GuideDetailPage = () => {
 
             {/* Main Content */}
             <div className="lg:col-span-3 order-1 lg:order-2 space-y-6">
-              <Card className="border-border/50 bg-card shadow-card">
-                <CardHeader>
-                  <CardTitle className="text-xl">{t('guideDetail.guideContent')}</CardTitle>
-                </CardHeader>
+              <Card className="border-border/50 bg-card shadow-card pt-4">
                 <CardContent>
-                  <p className="text-muted-foreground leading-relaxed mb-6">{guideSummary}</p>
-                  
                   {contentLoading ? (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground">{t('guideDetail.loadingContent')}</p>
