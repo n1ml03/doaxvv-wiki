@@ -152,9 +152,6 @@ const ItemDetailPage = () => {
                     <div className="font-medium">{t(`itemType.${item.type.toLowerCase()}`)}</div>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-sm text-muted-foreground">{t('itemDetail.rarity')}</div>
-                  </div>
-                  <div className="space-y-1">
                     <div className="text-sm text-muted-foreground">{t('itemDetail.updated')}</div>
                     <div className="font-medium">{item.updated_at}</div>
                   </div>
@@ -187,7 +184,7 @@ const ItemDetailPage = () => {
                 title: relItem.title,
                 image: relItem.image,
                 href: `/items/${relItem.unique_key}`,
-                badge: relItem.rarity,
+                badge: relItem.type,
                 description: relItem.summary,
               }))}
               viewAllHref="/items"
@@ -204,7 +201,6 @@ const ItemDetailPage = () => {
                 title: guide.title,
                 image: guide.image,
                 href: `/guides/${guide.unique_key}`,
-                badge: t(`difficulty.${guide.difficulty.toLowerCase()}`),
                 description: guide.summary,
               }))}
               viewAllHref="/guides"

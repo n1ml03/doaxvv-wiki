@@ -9,7 +9,7 @@ import {
 } from "@/shared/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 import { NavGroup } from "@/shared/types/navigation";
-import { isPathActive, isGroupActive } from "@/shared/config/navigation";
+import { isPathActive, isPathInSection, isGroupActive } from "@/shared/config/navigation";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 
 interface DesktopNavigationProps {
@@ -76,6 +76,7 @@ export function DesktopNavigation({ groups }: DesktopNavigationProps) {
                     {/* Navigation Items */}
                     {group.items.map((item) => {
                       const itemIsActive = isPathActive(currentPath, item.path);
+                      const itemIsInSection = isPathInSection(currentPath, item.path);
                       const ItemIcon = item.icon;
                       const description = getDescription(item.path, item.label);
 
@@ -95,13 +96,13 @@ export function DesktopNavigation({ groups }: DesktopNavigationProps) {
                                 "flex items-start gap-3 rounded-xl p-3 transition-all duration-200",
                                 "hover:bg-accent hover:shadow-sm group select-none",
                                 "focus:outline-none focus:ring-2 focus:ring-primary/20",
-                                itemIsActive && "bg-primary/5 ring-1 ring-primary/10"
+                                itemIsInSection && "bg-primary/5 ring-1 ring-primary/10"
                               )}
                               aria-current={itemIsActive ? "page" : undefined}
                             >
                               <div className={cn(
                                 "flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0 transition-all duration-200 mt-0.5",
-                                itemIsActive 
+                                itemIsInSection 
                                   ? "bg-primary text-primary-foreground shadow-sm" 
                                   : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
                               )}>
@@ -110,7 +111,7 @@ export function DesktopNavigation({ groups }: DesktopNavigationProps) {
                               <div className="flex-1 min-w-0 space-y-1">
                                 <p className={cn(
                                   "text-sm font-semibold transition-colors leading-none",
-                                  itemIsActive ? "text-primary" : "text-foreground group-hover:text-primary"
+                                  itemIsInSection ? "text-primary" : "text-foreground group-hover:text-primary"
                                 )}>
                                   {item.label}
                                 </p>

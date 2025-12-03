@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, SearchFilter, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop } from "@/shared/components";
+import { Breadcrumb, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop, UnifiedFilterUI } from "@/shared/components";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Package } from "lucide-react";
@@ -9,6 +9,7 @@ import { contentLoader } from "@/content";
 import type { Item } from "@/content";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 import { useDocumentTitle } from "@/shared/hooks/useDocumentTitle";
+import { useUnifiedFilter } from "@/shared/hooks/useUnifiedFilter";
 
 const ITEMS_PER_PAGE = 24;
 
@@ -20,10 +21,6 @@ const ItemsPage = () => {
   
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState("newest");
 
   useEffect(() => {
     async function loadContent() {
@@ -34,42 +31,37 @@ const ItemsPage = () => {
     loadContent();
   }, []);
 
-  const categories = [
-    { value: "SSR", label: t('rarity.ssr') },
-    { value: "SR", label: t('rarity.sr') },
-    { value: "R", label: t('rarity.r') },
-    { value: "N", label: t('rarity.n') },
-  ];
+  // Custom search function for items
+  const customSearchFn = useMemo(() => {
+    return (item: Item, searchTerm: string): boolean => {
+      if (!searchTerm || searchTerm.trim() === '') return true;
+      return item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             item.summary.toLowerCase().includes(searchTerm.toLowerCase());
+    };
+  }, []);
 
-  const typeTags = [
-    { value: "Accessory", label: t('itemType.accessory') },
-    { value: "Decoration", label: t('itemType.decoration') },
-    { value: "Consumable", label: t('itemType.consumable') },
-    { value: "Material", label: t('itemType.material') },
-  ];
+  // Custom sort functions for item-specific sorting
+  const customSortFunctions = useMemo(() => ({
+    'newest': () => 0, // Default order
+    'a-z': (a: Item, b: Item) => a.title.localeCompare(b.title),
+    'z-a': (a: Item, b: Item) => b.title.localeCompare(a.title),
+  }), []);
 
-  const filteredItems = useMemo(() => {
-    let result = items.filter(item => {
-      const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.summary.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesRarity = selectedCategory === "All" || item.rarity === selectedCategory;
-      const matchesType = selectedTags.length === 0 || selectedTags.includes(item.type);
-      return matchesSearch && matchesRarity && matchesType;
-    });
-
-    switch (sortBy) {
-      case "a-z":
-        result = [...result].sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      case "z-a":
-        result = [...result].sort((a, b) => b.title.localeCompare(a.title));
-        break;
-      default:
-        break;
-    }
-
-    return result;
-  }, [searchTerm, selectedCategory, selectedTags, sortBy, items]);
+  // Use unified filter hook with items preset
+  const {
+    state,
+    handlers,
+    filteredData: filteredItems,
+    activeFilterCount,
+    config,
+  } = useUnifiedFilter<Item>({
+    preset: 'items',
+    data: items,
+    customSearchFn,
+    customSortFunctions,
+    typeField: 'type',
+    defaultSort: 'newest',
+  });
 
   const getTypeIcon = (_type: string) => {
     return <Package className="h-3 w-3 mr-1" />;
@@ -105,21 +97,20 @@ const ItemsPage = () => {
             </p>
           </div>
 
-          <SearchFilter
+          <UnifiedFilterUI
+            state={state}
+            handlers={handlers}
+            config={config}
+            activeFilterCount={activeFilterCount}
             placeholder={t('items.searchPlaceholder')}
-            categories={categories}
-            tags={typeTags}
-            onSearchChange={setSearchTerm}
-            onCategoryChange={setSelectedCategory}
-            onTagsChange={setSelectedTags}
-            onSortChange={setSortBy}
+            showResultCount={filteredItems.length}
           />
 
           <PaginatedGrid
             items={filteredItems}
             itemsPerPage={ITEMS_PER_PAGE}
             getKey={(item) => item.id}
-            resetDeps={[searchTerm, selectedCategory, selectedTags, sortBy]}
+            resetDeps={[state.search, state.type, state.sort]}
             emptyState={
               <div className="text-center py-12 sm:py-16">
                 <p className="text-base sm:text-lg text-muted-foreground">{t('items.noResults')}</p>

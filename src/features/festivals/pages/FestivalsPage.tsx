@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, SearchFilter, LocalizedText, ResponsiveContainer, DatasetImage, ScrollToTop } from "@/shared/components";
+import { Breadcrumb, LocalizedText, ResponsiveContainer, DatasetImage, ScrollToTop, UnifiedFilterUI } from "@/shared/components";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -12,6 +12,7 @@ import { useLanguage } from "@/shared/contexts/language-hooks";
 import { getLocalizedValue } from "@/shared/utils/localization";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 import { useDocumentTitle } from "@/shared/hooks/useDocumentTitle";
+import { useUnifiedFilter } from "@/shared/hooks/useUnifiedFilter";
 
 const FestivalsPage = () => {
   const { t } = useTranslation();
@@ -22,59 +23,58 @@ const FestivalsPage = () => {
   const [festivals, setFestivals] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [time, setTime] = useState(new Date());
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [sortBy, setSortBy] = useState("newest");
   const { currentLanguage } = useLanguage();
 
   useEffect(() => {
     async function loadContent() {
       await contentLoader.initialize();
-      // Filter events to only show Festival type
+      // Filter events to only show Main type (festivals)
       const allEvents = contentLoader.getEvents();
-      const festivalEvents = allEvents.filter(event => event.type === "Festival");
+      const festivalEvents = allEvents.filter(event => event.type === "Main");
       setFestivals(festivalEvents);
       setLoading(false);
     }
     loadContent();
   }, []);
 
-  const categories = [
-    { value: "Active", label: t('filters.active') },
-    { value: "Upcoming", label: t('filters.upcoming') },
-    { value: "Ended", label: t('filters.ended') },
-  ];
+  // Custom search function for festivals
+  const customSearchFn = useMemo(() => {
+    return (item: Event, searchTerm: string): boolean => {
+      if (!searchTerm || searchTerm.trim() === '') return true;
+      const festivalName = getLocalizedValue(item.name, currentLanguage);
+      return festivalName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             item.title.toLowerCase().includes(searchTerm.toLowerCase());
+    };
+  }, [currentLanguage]);
 
-  const filteredFestivals = useMemo(() => {
-    let result = festivals.filter(festival => {
-      const festivalName = getLocalizedValue(festival.name, currentLanguage);
-      const matchesSearch = festivalName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           festival.title.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = selectedCategory === "All" || festival.event_status === selectedCategory;
-      return matchesSearch && matchesStatus;
-    });
+  // Custom sort functions for festival-specific sorting
+  const customSortFunctions = useMemo(() => ({
+    'newest': (a: Event, b: Event) => 
+      new Date(b.start_date).getTime() - new Date(a.start_date).getTime(),
+    'ending-soon': (a: Event, b: Event) => 
+      new Date(a.end_date).getTime() - new Date(b.end_date).getTime(),
+    'a-z': (a: Event, b: Event) => 
+      getLocalizedValue(a.name, currentLanguage).localeCompare(getLocalizedValue(b.name, currentLanguage)),
+    'z-a': (a: Event, b: Event) => 
+      getLocalizedValue(b.name, currentLanguage).localeCompare(getLocalizedValue(a.name, currentLanguage)),
+  }), [currentLanguage]);
 
-    switch (sortBy) {
-      case "a-z":
-        result = [...result].sort((a, b) => {
-          const nameA = getLocalizedValue(a.name, currentLanguage);
-          const nameB = getLocalizedValue(b.name, currentLanguage);
-          return nameA.localeCompare(nameB);
-        });
-        break;
-      case "z-a":
-        result = [...result].sort((a, b) => {
-          const nameA = getLocalizedValue(a.name, currentLanguage);
-          const nameB = getLocalizedValue(b.name, currentLanguage);
-          return nameB.localeCompare(nameA);
-        });
-        break;
-      default:
-        break;
-    }
-
-    return result;
-  }, [searchTerm, selectedCategory, sortBy, festivals, currentLanguage]);
+  // Use unified filter hook with festivals preset
+  const {
+    state,
+    handlers,
+    filteredData: filteredFestivals,
+    activeFilterCount,
+    config,
+  } = useUnifiedFilter<Event>({
+    preset: 'festivals',
+    data: festivals,
+    customSearchFn,
+    customSortFunctions,
+    statusField: 'event_status',
+    dateField: 'start_date',
+    defaultSort: 'newest',
+  });
 
 
   useEffect(() => {
@@ -142,12 +142,13 @@ const FestivalsPage = () => {
             <p className="text-base sm:text-lg text-muted-foreground">{t('festivals.subtitle')}</p>
           </div>
 
-          <SearchFilter
+          <UnifiedFilterUI
+            state={state}
+            handlers={handlers}
+            config={config}
+            activeFilterCount={activeFilterCount}
             placeholder={t('festivals.searchPlaceholder')}
-            categories={categories}
-            onSearchChange={setSearchTerm}
-            onCategoryChange={setSelectedCategory}
-            onSortChange={setSortBy}
+            showResultCount={filteredFestivals.length}
           />
 
           {/* Card grid: 1 col mobile, 2 col desktop */}

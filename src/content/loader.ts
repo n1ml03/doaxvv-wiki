@@ -246,8 +246,7 @@ export function transformItem(raw: any): Item {
     author: raw.author,
     status: raw.status,
     related_ids: raw.related_ids ? raw.related_ids.split('|') : [],
-    type: raw.type,
-    rarity: raw.rarity,
+    type: raw.type as Item['type'],
     image: raw.image,
     // LocalizedString fields
     name: createLocalizedStringFromCSV(raw, 'name'),
@@ -271,7 +270,6 @@ export function transformGuide(raw: any): Guide {
     status: raw.status,
     related_ids: raw.related_ids ? raw.related_ids.split('|') : [],
     content_ref: raw.content_ref,
-    difficulty: raw.difficulty,
     read_time: raw.read_time,
     image: raw.image,
     topics: raw.topics ? raw.topics.split('|') : [],
@@ -442,7 +440,6 @@ export function transformMission(raw: any): Mission {
     status: raw.status,
     related_ids: raw.related_ids ? raw.related_ids.split('|') : [],
     type: raw.type as Mission['type'],
-    mission_status: raw.mission_status as Mission['mission_status'],
     event_id: raw.event_id || undefined,
     image: raw.image || undefined,
     objectives: raw.objectives ? raw.objectives.split('|') : [],
@@ -844,9 +841,9 @@ export class ContentLoader {
       this.eventsByIndex.set(event.id, event);
     }
     
-    // Also cache festivals (events with type 'Festival')
+    // Also cache festivals (events with type 'Main')
     if (!this.getCached<Festival>('festivals')) {
-      const festivals = events.filter((e: Event) => e.type === 'Festival') as FestivalType[];
+      const festivals = events.filter((e: Event) => e.type === 'Main') as FestivalType[];
       this.setCache('festivals', festivals);
       
       // Build festival lookup map

@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, DatasetImage, PaginatedGrid, ScrollToTop } from "@/shared/components";
-import { SearchFilter } from "@/shared/components";
+import { Breadcrumb, DatasetImage, PaginatedGrid, ScrollToTop, UnifiedFilterUI } from "@/shared/components";
 import { ResponsiveContainer } from "@/shared/components/responsive";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
@@ -15,6 +14,7 @@ import { calculateTimeRemaining, formatTimeRemaining } from "@/shared/utils/coun
 import type { Gacha } from "@/content/schemas/content.schema";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 import { useDocumentTitle } from "@/shared/hooks/useDocumentTitle";
+import { useUnifiedFilter } from "@/shared/hooks/useUnifiedFilter";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -24,19 +24,10 @@ const GachasPage = () => {
   // Set dynamic page title (Requirements: 9.1, 9.2)
   useDocumentTitle(t('gachas.title'));
   
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [sortBy, setSortBy] = useState("newest");
   const [gachas, setGachas] = useState<Gacha[]>([]);
   const [loading, setLoading] = useState(true);
   const [time, setTime] = useState(new Date());
   const { currentLanguage } = useLanguage();
-
-  const categories = [
-    { value: "Active", label: t('filters.active') },
-    { value: "Coming Soon", label: t('filters.comingSoon') },
-    { value: "Ended", label: t('filters.ended') },
-  ];
 
   useEffect(() => {
     async function loadContent() {
@@ -54,7 +45,6 @@ const GachasPage = () => {
     return () => clearInterval(timer);
   }, []);
 
-
   const getTimeDisplay = (gacha: Gacha) => {
     if (gacha.gacha_status === 'Coming Soon') {
       const timeToStart = calculateTimeRemaining(new Date(gacha.start_date), time);
@@ -67,35 +57,41 @@ const GachasPage = () => {
     return t('gachas.ended');
   };
 
-  const filteredGachas = useMemo(() => {
-    let result = gachas.filter(gacha => {
-      const name = getLocalizedValue(gacha.name, currentLanguage);
-      const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = selectedCategory === "All" || gacha.gacha_status === selectedCategory;
-      return matchesSearch && matchesStatus;
-    });
+  // Custom search function for gachas
+  const customSearchFn = useMemo(() => {
+    return (item: Gacha, searchTerm: string): boolean => {
+      if (!searchTerm || searchTerm.trim() === '') return true;
+      const name = getLocalizedValue(item.name, currentLanguage);
+      return name.toLowerCase().includes(searchTerm.toLowerCase());
+    };
+  }, [currentLanguage]);
 
-    switch (sortBy) {
-      case "a-z":
-        result = [...result].sort((a, b) => 
-          getLocalizedValue(a.name, currentLanguage).localeCompare(getLocalizedValue(b.name, currentLanguage))
-        );
-        break;
-      case "z-a":
-        result = [...result].sort((a, b) => 
-          getLocalizedValue(b.name, currentLanguage).localeCompare(getLocalizedValue(a.name, currentLanguage))
-        );
-        break;
-      default:
-        // Sort by end date (newest first)
-        result = [...result].sort((a, b) => 
-          new Date(b.end_date).getTime() - new Date(a.end_date).getTime()
-        );
-        break;
-    }
+  // Custom sort functions for gacha-specific sorting
+  const customSortFunctions = useMemo(() => ({
+    'newest': (a: Gacha, b: Gacha) => 
+      new Date(b.end_date).getTime() - new Date(a.end_date).getTime(),
+    'ending-soon': (a: Gacha, b: Gacha) => 
+      new Date(a.end_date).getTime() - new Date(b.end_date).getTime(),
+    'rate-high': (a: Gacha, b: Gacha) => b.rates.ssr - a.rates.ssr,
+    'a-z': (a: Gacha, b: Gacha) => 
+      getLocalizedValue(a.name, currentLanguage).localeCompare(getLocalizedValue(b.name, currentLanguage)),
+  }), [currentLanguage]);
 
-    return result;
-  }, [searchTerm, selectedCategory, sortBy, gachas, currentLanguage]);
+  // Use unified filter hook with gachas preset
+  const {
+    state,
+    handlers,
+    filteredData: filteredGachas,
+    activeFilterCount,
+    config,
+  } = useUnifiedFilter<Gacha>({
+    preset: 'gachas',
+    data: gachas,
+    customSearchFn,
+    customSortFunctions,
+    statusField: 'gacha_status',
+    defaultSort: 'newest',
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -152,12 +148,13 @@ const GachasPage = () => {
             <p className="text-base sm:text-lg text-muted-foreground">{t('gachas.subtitle')}</p>
           </div>
 
-          <SearchFilter
+          <UnifiedFilterUI
+            state={state}
+            handlers={handlers}
+            config={config}
+            activeFilterCount={activeFilterCount}
             placeholder={t('gachas.searchPlaceholder')}
-            categories={categories}
-            onSearchChange={setSearchTerm}
-            onCategoryChange={setSelectedCategory}
-            onSortChange={setSortBy}
+            showResultCount={filteredGachas.length}
           />
 
           <PaginatedGrid
@@ -165,7 +162,7 @@ const GachasPage = () => {
             itemsPerPage={ITEMS_PER_PAGE}
             getKey={(gacha) => gacha.unique_key}
             gridClassName="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6"
-            resetDeps={[searchTerm, selectedCategory, sortBy]}
+            resetDeps={[state.search, state.status, state.sort, state.booleanFilters]}
             emptyState={
               <div className="text-center py-12 sm:py-16">
                 <p className="text-base sm:text-lg text-muted-foreground">{t('gachas.noResults')}</p>

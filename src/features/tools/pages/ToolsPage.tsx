@@ -1,17 +1,19 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, SearchFilter, ResponsiveContainer, DatasetImage, ScrollToTop } from "@/shared/components";
+import { Breadcrumb, ResponsiveContainer, DatasetImage, ScrollToTop, UnifiedFilterUI } from "@/shared/components";
 import { Card, CardContent, CardDescription, CardHeader } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { ChevronRight, Wrench } from "lucide-react";
 import { useTools, useCategories } from "@/content/hooks";
+import type { Tool } from "@/content";
 import { useLanguage } from "@/shared/contexts/language-hooks";
 import { getLocalizedValue } from "@/shared/utils/localization";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 import { useDocumentTitle } from "@/shared/hooks/useDocumentTitle";
+import { useUnifiedFilter } from "@/shared/hooks/useUnifiedFilter";
 
 const ToolsPage = () => {
   const { currentLanguage } = useLanguage();
@@ -22,47 +24,48 @@ const ToolsPage = () => {
   
   const { data: tools = [], isLoading: loading, error, refetch } = useTools();
   const { data: categoriesData = [] } = useCategories();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [sortBy, setSortBy] = useState("newest");
 
-  const categoryOptions = categoriesData.map(c => ({
+  const categoryOptions = useMemo(() => categoriesData.map(c => ({
     value: c.unique_key,
     label: getLocalizedValue(c.name, currentLanguage)
-  }));
+  })), [categoriesData, currentLanguage]);
 
-  const filteredTools = useMemo(() => {
-    let result = tools.filter(tool => {
-      const title = getLocalizedValue(tool.localizedTitle, currentLanguage).toLowerCase();
-      const summary = getLocalizedValue(tool.localizedSummary, currentLanguage).toLowerCase();
+  // Custom search function for tools
+  const customSearchFn = useMemo(() => {
+    return (item: Tool, searchTerm: string): boolean => {
+      if (!searchTerm || searchTerm.trim() === '') return true;
+      const title = getLocalizedValue(item.localizedTitle, currentLanguage).toLowerCase();
+      const summary = getLocalizedValue(item.localizedSummary, currentLanguage).toLowerCase();
       const search = searchTerm.toLowerCase();
-      const matchesSearch = title.includes(search) || summary.includes(search);
-      const matchesCategory = selectedCategory === "All" || tool.category === selectedCategory;
-      return matchesSearch && matchesCategory;
-    });
+      return title.includes(search) || summary.includes(search);
+    };
+  }, [currentLanguage]);
 
-    switch (sortBy) {
-      case "a-z":
-        result = [...result].sort((a, b) => 
-          getLocalizedValue(a.localizedTitle, currentLanguage).localeCompare(getLocalizedValue(b.localizedTitle, currentLanguage))
-        );
-        break;
-      case "z-a":
-        result = [...result].sort((a, b) => 
-          getLocalizedValue(b.localizedTitle, currentLanguage).localeCompare(getLocalizedValue(a.localizedTitle, currentLanguage))
-        );
-        break;
-      case "newest":
-        result = [...result].sort((a, b) => 
-          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-        );
-        break;
-      default:
-        break;
-    }
+  // Custom sort functions for tool-specific sorting
+  const customSortFunctions = useMemo(() => ({
+    'newest': (a: Tool, b: Tool) => 
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+    'a-z': (a: Tool, b: Tool) => 
+      getLocalizedValue(a.localizedTitle, currentLanguage).localeCompare(getLocalizedValue(b.localizedTitle, currentLanguage)),
+    'z-a': (a: Tool, b: Tool) => 
+      getLocalizedValue(b.localizedTitle, currentLanguage).localeCompare(getLocalizedValue(a.localizedTitle, currentLanguage)),
+  }), [currentLanguage]);
 
-    return result;
-  }, [searchTerm, selectedCategory, sortBy, tools, currentLanguage]);
+  // Use unified filter hook
+  const {
+    state,
+    handlers,
+    filteredData: filteredTools,
+    activeFilterCount,
+    config,
+  } = useUnifiedFilter<Tool>({
+    preset: 'default',
+    data: tools,
+    customSearchFn,
+    customSortFunctions,
+    categoryField: 'category',
+    defaultSort: 'newest',
+  });
 
   if (loading) {
     return (
@@ -114,12 +117,14 @@ const ToolsPage = () => {
             <p className="text-base sm:text-lg text-muted-foreground">{t('tools.subtitle')}</p>
           </div>
 
-          <SearchFilter
+          <UnifiedFilterUI
+            state={state}
+            handlers={handlers}
+            config={config}
+            activeFilterCount={activeFilterCount}
             placeholder={t('tools.searchPlaceholder')}
+            showResultCount={filteredTools.length}
             categories={categoryOptions}
-            onSearchChange={setSearchTerm}
-            onCategoryChange={setSelectedCategory}
-            onSortChange={setSortBy}
           />
 
           {/* Card grid: 1 col mobile, 2 col desktop */}

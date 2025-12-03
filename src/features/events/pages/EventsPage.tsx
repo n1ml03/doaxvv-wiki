@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, SearchFilter, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop } from "@/shared/components";
+import { Breadcrumb, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop, UnifiedFilterUI } from "@/shared/components";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -10,6 +10,8 @@ import { Clock, Gift } from "lucide-react";
 import { useEvents } from "@/content/hooks";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 import { useDocumentTitle } from "@/shared/hooks/useDocumentTitle";
+import { useUnifiedFilter } from "@/shared/hooks/useUnifiedFilter";
+import type { Event } from "@/content";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -20,37 +22,41 @@ const EventsPage = () => {
   // Set dynamic page title (Requirements: 9.1, 9.2)
   useDocumentTitle(t('events.title'));
   const [time, setTime] = useState(new Date());
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [sortBy, setSortBy] = useState("newest");
 
-  const categories = [
-    { value: "Match", label: t('eventType.match') },
-    { value: "Festival", label: t('eventType.festival') },
-    { value: "Ranking", label: t('eventType.ranking') },
-  ];
+  // Custom search function for events
+  const customSearchFn = useMemo(() => {
+    return (item: Event, searchTerm: string): boolean => {
+      if (!searchTerm || searchTerm.trim() === '') return true;
+      return item.title.toLowerCase().includes(searchTerm.toLowerCase());
+    };
+  }, []);
 
-  const filteredEvents = useMemo(() => {
-    let result = events.filter(event => {
-      const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = selectedCategory === "All" || event.type === selectedCategory;
-      return matchesSearch && matchesType;
-    });
+  // Custom sort functions for event-specific sorting
+  const customSortFunctions = useMemo(() => ({
+    'newest': (a: Event, b: Event) => 
+      new Date(b.start_date).getTime() - new Date(a.start_date).getTime(),
+    'ending-soon': (a: Event, b: Event) => 
+      new Date(a.end_date).getTime() - new Date(b.end_date).getTime(),
+    'a-z': (a: Event, b: Event) => a.title.localeCompare(b.title),
+    'z-a': (a: Event, b: Event) => b.title.localeCompare(a.title),
+  }), []);
 
-    switch (sortBy) {
-      case "a-z":
-        result = [...result].sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      case "z-a":
-        result = [...result].sort((a, b) => b.title.localeCompare(a.title));
-        break;
-      default:
-        break;
-    }
-
-    return result;
-  }, [searchTerm, selectedCategory, sortBy, events]);
-
+  // Use unified filter hook with events preset
+  const {
+    state,
+    handlers,
+    filteredData: filteredEvents,
+    activeFilterCount,
+    config,
+  } = useUnifiedFilter<Event>({
+    preset: 'events',
+    data: events,
+    customSearchFn,
+    customSortFunctions,
+    statusField: 'event_status',
+    typeField: 'type',
+    defaultSort: 'newest',
+  });
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -124,12 +130,13 @@ const EventsPage = () => {
             <p className="text-base sm:text-lg text-muted-foreground">{t('events.subtitle')}</p>
           </div>
 
-          <SearchFilter
+          <UnifiedFilterUI
+            state={state}
+            handlers={handlers}
+            config={config}
+            activeFilterCount={activeFilterCount}
             placeholder={t('events.searchPlaceholder')}
-            categories={categories}
-            onSearchChange={setSearchTerm}
-            onCategoryChange={setSelectedCategory}
-            onSortChange={setSortBy}
+            showResultCount={filteredEvents.length}
           />
 
           <PaginatedGrid
@@ -137,7 +144,7 @@ const EventsPage = () => {
             itemsPerPage={ITEMS_PER_PAGE}
             getKey={(event) => event.id}
             gridClassName="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6"
-            resetDeps={[searchTerm, selectedCategory, sortBy]}
+            resetDeps={[state.search, state.status, state.type, state.sort]}
             emptyState={
               <div className="text-center py-12 sm:py-16">
                 <p className="text-base sm:text-lg text-muted-foreground">{t('events.noResults')}</p>

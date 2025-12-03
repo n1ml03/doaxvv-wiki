@@ -4,7 +4,15 @@ export * from './skeletons';
 export { default as Breadcrumb, type BreadcrumbItem } from './Breadcrumb';
 export { default as ContentCard } from './ContentCard';
 export { default as RelatedContent } from './RelatedContent';
-export { default as SearchFilter, type FilterOption } from './SearchFilter';
+export { 
+  default as SearchFilter, 
+  type FilterOption, 
+  type FilterState,
+  type SearchFilterProps,
+  type RangeFilter,
+  type DateRangeFilter,
+  type FilterPreset as SearchFilterPreset
+} from './SearchFilter';
 export { LocalizedText } from './LocalizedText';
 export { LanguageSwitcher } from './LanguageSwitcher';
 export { TranslationIndicator } from './TranslationIndicator';
@@ -32,3 +40,7 @@ export {
 export { UniqueKeyDisplay } from './UniqueKeyDisplay';
 export { MarkdownRenderer } from './MarkdownRenderer';
 export { ScrollToTop } from './ScrollToTop';
+export { 
+  UnifiedFilterUI, 
+  type UnifiedFilterUIProps 
+} from './UnifiedFilterUI';

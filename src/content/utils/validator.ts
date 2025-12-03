@@ -3,7 +3,7 @@
  * Validates content against schema definitions and business rules
  */
 
-import { REQUIRED_FIELDS, VALID_STATUSES, VALID_DIFFICULTIES, VALID_RARITIES, VALID_EVENT_TYPES, VALID_EVENT_STATUSES, VALID_GACHA_STATUSES } from '../schemas/content.schema';
+import { REQUIRED_FIELDS, VALID_STATUSES, VALID_RARITIES, VALID_EVENT_TYPES, VALID_EVENT_STATUSES, VALID_GACHA_STATUSES, VALID_QUIZ_DIFFICULTIES } from '../schemas/content.schema';
 
 /**
  * Validation error with field-level details
@@ -78,16 +78,6 @@ export class ContentValidator {
       });
     }
 
-    // Validate difficulty (for guides)
-    if (contentType === 'guide' && row.difficulty && !VALID_DIFFICULTIES.includes(row.difficulty)) {
-      errors.push({
-        row: rowNum,
-        field: 'difficulty',
-        message: `Invalid difficulty '${row.difficulty}'. Must be one of: ${VALID_DIFFICULTIES.join(', ')}`,
-        value: row.difficulty
-      });
-    }
-
     // Validate rarity (for characters and swimsuits)
     if ((contentType === 'character' || contentType === 'swimsuit') && row.rarity && !VALID_RARITIES.includes(row.rarity)) {
       errors.push({
@@ -125,6 +115,16 @@ export class ContentValidator {
         field: 'gacha_status',
         message: `Invalid gacha status '${row.gacha_status}'. Must be one of: ${VALID_GACHA_STATUSES.join(', ')}`,
         value: row.gacha_status
+      });
+    }
+
+    // Validate quiz difficulty
+    if (contentType === 'quiz' && row.difficulty && !VALID_QUIZ_DIFFICULTIES.includes(row.difficulty)) {
+      errors.push({
+        row: rowNum,
+        field: 'difficulty',
+        message: `Invalid difficulty '${row.difficulty}'. Must be one of: ${VALID_QUIZ_DIFFICULTIES.join(', ')}`,
+        value: row.difficulty
       });
     }
 

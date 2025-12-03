@@ -16,10 +16,10 @@ import { useTranslation } from "@/shared/hooks/useTranslation";
 import { useDocumentTitle } from "@/shared/hooks/useDocumentTitle";
 
 const STATS_CONFIG = [
-  { key: "characters", icon: Users, color: "text-tec" },
-  { key: "swimsuits", icon: Sparkles, color: "text-secondary" },
-  { key: "activeEvents", icon: Calendar, color: "text-ssr" },
-  { key: "guides", icon: BookOpen, color: "text-stm" },
+  { key: "characters", icon: Users, color: "text-tec", link: "/girls" },
+  { key: "swimsuits", icon: Sparkles, color: "text-secondary", link: "/swimsuits" },
+  { key: "activeEvents", icon: Calendar, color: "text-ssr", link: "/events" },
+  { key: "guides", icon: BookOpen, color: "text-stm", link: "/guides" },
 ];
 
 const HomePage = () => {
@@ -66,21 +66,22 @@ const HomePage = () => {
             {STATS_CONFIG.map((stat, index) => {
               const Icon = stat.icon;
               return (
-                <Card 
-                  key={stat.key}
-                  className="border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 animate-fade-in"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <CardContent className="p-4 sm:p-6 text-center">
-                    <Icon className={`h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 sm:mb-3 ${stat.color}`} />
-                    <div className="text-2xl sm:text-3xl font-bold text-foreground mb-1">
-                      {statsValues[stat.key as keyof typeof statsValues]}
-                    </div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">
-                      {t(`home.stats.${stat.key}`)}
-                    </div>
-                  </CardContent>
-                </Card>
+                <Link to={stat.link} key={stat.key}>
+                  <Card 
+                    className="border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 animate-fade-in cursor-pointer"
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    <CardContent className="p-4 sm:p-6 text-center">
+                      <Icon className={`h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 sm:mb-3 ${stat.color}`} />
+                      <div className="text-2xl sm:text-3xl font-bold text-foreground mb-1">
+                        {statsValues[stat.key as keyof typeof statsValues]}
+                      </div>
+                      <div className="text-xs sm:text-sm text-muted-foreground">
+                        {t(`home.stats.${stat.key}`)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               );
             })}
           </div>
@@ -111,7 +112,7 @@ const HomePage = () => {
             <PopularGuides />
           </div>
 
-                    {/* Quick Links Section */}
+          {/* Quick Links Section */}
           <div className="mt-8 sm:mt-12">
             <Card className="border-border/50 bg-card shadow-card">
               <CardHeader className="pb-3 sm:pb-6">

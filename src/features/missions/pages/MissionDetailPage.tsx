@@ -5,7 +5,7 @@ import { Breadcrumb, RelatedContent, LocalizedText, ResponsiveContainer, Dataset
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
-import { Target, Gift, Info, Calendar, CheckCircle, Lock, AlertCircle } from "lucide-react";
+import { Target, Gift, Info, Calendar, CheckCircle, Lock } from "lucide-react";
 import { contentLoader } from "@/content";
 import type { Mission, Event } from "@/content";
 import { getLocalizedValue } from "@/shared/utils/localization";
@@ -34,11 +34,10 @@ const MissionDetailPage = () => {
           setRelatedEvent(event || null);
         }
         
-        // Get related missions (same type or same status)
+        // Get related missions (same type)
         const allMissions = contentLoader.getMissions();
         const related = allMissions.filter(m => 
-          m.id !== foundMission.id && 
-          (m.type === foundMission.type || m.mission_status === foundMission.mission_status)
+          m.id !== foundMission.id && m.type === foundMission.type
         ).slice(0, 4);
         setRelatedMissions(related);
       }
@@ -55,28 +54,7 @@ const MissionDetailPage = () => {
       case "Weekly": return "bg-purple-500/80 text-white";
       case "Challenge": return "bg-orange-500/80 text-white";
       case "Event": return "bg-pink-500/80 text-white";
-      case "Story": return "bg-green-500/80 text-white";
       default: return "bg-muted text-muted-foreground";
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Active": return "bg-accent text-accent-foreground";
-      case "Completed": return "bg-green-600 text-white";
-      case "Expired": return "bg-muted text-muted-foreground";
-      case "Locked": return "bg-gray-500 text-white";
-      default: return "bg-muted text-muted-foreground";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Active": return <CheckCircle className="h-4 w-4" />;
-      case "Completed": return <CheckCircle className="h-4 w-4" />;
-      case "Expired": return <AlertCircle className="h-4 w-4" />;
-      case "Locked": return <Lock className="h-4 w-4" />;
-      default: return null;
     }
   };
 
@@ -140,10 +118,6 @@ const MissionDetailPage = () => {
                     <Badge className={getTypeColor(mission.type)}>
                       {t(`missionType.${mission.type.toLowerCase()}`)}
                     </Badge>
-                    <Badge className={getStatusColor(mission.mission_status)}>
-                      {getStatusIcon(mission.mission_status)}
-                      <span className="ml-1">{t(`missionStatus.${mission.mission_status.toLowerCase()}`)}</span>
-                    </Badge>
                   </div>
                   <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold text-white mb-2 sm:mb-4">
                     <LocalizedText localized={mission.name} showIndicator />
@@ -158,10 +132,6 @@ const MissionDetailPage = () => {
                 <div className="flex flex-wrap gap-2 mb-3">
                   <Badge className={getTypeColor(mission.type)}>
                     {t(`missionType.${mission.type.toLowerCase()}`)}
-                  </Badge>
-                  <Badge className={getStatusColor(mission.mission_status)}>
-                    {getStatusIcon(mission.mission_status)}
-                    <span className="ml-1">{t(`missionStatus.${mission.mission_status.toLowerCase()}`)}</span>
                   </Badge>
                 </div>
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">

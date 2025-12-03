@@ -1,4 +1,5 @@
-import { Languages } from 'lucide-react';
+import { useState } from 'react';
+import { Languages, Copy, Check } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -21,6 +22,15 @@ interface TranslationIndicatorProps {
  */
 export function TranslationIndicator({ localized, className }: TranslationIndicatorProps) {
   const translations = getAllTranslations(localized);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = translations.map(({ value }) => value).join('\n');
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -51,11 +61,25 @@ export function TranslationIndicator({ localized, className }: TranslationIndica
           <div className="bg-gradient-to-b from-popover to-popover/95 backdrop-blur-xl rounded-lg border border-border/50">
             {/* Header */}
             <div className="px-4 py-2.5 border-b border-border/50 bg-muted/30">
-              <div className="flex items-center gap-2">
-                <Languages className="w-4 h-4 text-primary" />
-                <span className="text-xs font-semibold text-foreground select-none tracking-wide">
-                  TRANSLATIONS
-                </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Languages className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-semibold text-foreground select-none tracking-wide">
+                    TRANSLATIONS
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className={cn(
+                    'p-1 rounded transition-all duration-150',
+                    'hover:bg-muted/60 active:scale-95',
+                    copied ? 'text-green-500' : 'text-muted-foreground hover:text-foreground'
+                  )}
+                  aria-label="Copy all translations"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
               </div>
             </div>
             

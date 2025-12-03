@@ -26,13 +26,13 @@ const FestivalDetailPage = () => {
     async function loadContent() {
       await contentLoader.initialize();
       const foundEvent = contentLoader.getEventByUniqueKey(unique_key || "");
-      // Only set if it's a Festival type
-      if (foundEvent && foundEvent.type === "Festival") {
+      // Only set if it's a Main type (festival)
+      if (foundEvent && foundEvent.type === "Main") {
         setFestival(foundEvent);
         // Get other festivals for related section
         const allEvents = contentLoader.getEvents();
         const otherFestivals = allEvents
-          .filter(e => e.type === "Festival" && e.id !== foundEvent.id)
+          .filter(e => e.type === "Main" && e.id !== foundEvent.id)
           .slice(0, 3);
         setRelatedFestivals(otherFestivals);
       }

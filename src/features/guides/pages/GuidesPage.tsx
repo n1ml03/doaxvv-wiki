@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, SearchFilter, ResponsiveContainer, DatasetImage, ScrollToTop } from "@/shared/components";
+import { Breadcrumb, ResponsiveContainer, DatasetImage, ScrollToTop, UnifiedFilterUI } from "@/shared/components";
 import { Card, CardContent, CardDescription, CardHeader } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -13,6 +13,7 @@ import { useLanguage } from "@/shared/contexts/language-hooks";
 import { getLocalizedValue } from "@/shared/utils/localization";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 import { useDocumentTitle } from "@/shared/hooks/useDocumentTitle";
+import { useUnifiedFilter } from "@/shared/hooks/useUnifiedFilter";
 
 const GuidesPage = () => {
   const { currentLanguage } = useLanguage();
@@ -22,40 +23,56 @@ const GuidesPage = () => {
   // Set dynamic page title (Requirements: 9.1, 9.2)
   useDocumentTitle(t('guides.title'));
   const { data: categoriesData = [] } = useCategories();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [sortBy, setSortBy] = useState("newest");
 
-  const categoryOptions = categoriesData.map(c => ({
+  // Category options for filtering
+  const categoryOptions = useMemo(() => categoriesData.map(c => ({
     value: c.unique_key,
     label: getLocalizedValue(c.name, currentLanguage)
-  }));
+  })), [categoriesData, currentLanguage]);
 
-  const filteredGuides = useMemo(() => {
-    let result = guides.filter(guide => {
-      const matchesSearch = getLocalizedValue(guide.localizedTitle, currentLanguage).toLowerCase().includes(searchTerm.toLowerCase()) ||
-        getLocalizedValue(guide.localizedSummary, currentLanguage).toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === "All" || guide.category === selectedCategory;
-      return matchesSearch && matchesCategory;
-    });
+  // Custom search function for guides
+  const customSearchFn = useMemo(() => {
+    return (item: Guide, searchTerm: string): boolean => {
+      if (!searchTerm || searchTerm.trim() === '') return true;
+      return getLocalizedValue(item.localizedTitle, currentLanguage).toLowerCase().includes(searchTerm.toLowerCase()) ||
+             getLocalizedValue(item.localizedSummary, currentLanguage).toLowerCase().includes(searchTerm.toLowerCase());
+    };
+  }, [currentLanguage]);
 
-    switch (sortBy) {
-      case "a-z":
-        result = [...result].sort((a, b) => 
-          getLocalizedValue(a.localizedTitle, currentLanguage).localeCompare(getLocalizedValue(b.localizedTitle, currentLanguage))
-        );
-        break;
-      case "z-a":
-        result = [...result].sort((a, b) => 
-          getLocalizedValue(b.localizedTitle, currentLanguage).localeCompare(getLocalizedValue(a.localizedTitle, currentLanguage))
-        );
-        break;
-      default:
-        break;
-    }
+  // Custom sort functions for guide-specific sorting
+  const customSortFunctions = useMemo(() => {
+    const difficultyOrder = { Easy: 1, Medium: 2, Hard: 3 };
+    return {
+      'newest': () => 0, // Default order
+      'a-z': (a: Guide, b: Guide) => 
+        getLocalizedValue(a.localizedTitle, currentLanguage).localeCompare(getLocalizedValue(b.localizedTitle, currentLanguage)),
+      'z-a': (a: Guide, b: Guide) => 
+        getLocalizedValue(b.localizedTitle, currentLanguage).localeCompare(getLocalizedValue(a.localizedTitle, currentLanguage)),
+      'difficulty-asc': (a: Guide, b: Guide) => 
+        (difficultyOrder[a.difficulty as keyof typeof difficultyOrder] || 0) - 
+        (difficultyOrder[b.difficulty as keyof typeof difficultyOrder] || 0),
+      'difficulty-desc': (a: Guide, b: Guide) => 
+        (difficultyOrder[b.difficulty as keyof typeof difficultyOrder] || 0) - 
+        (difficultyOrder[a.difficulty as keyof typeof difficultyOrder] || 0),
+    };
+  }, [currentLanguage]);
 
-    return result;
-  }, [searchTerm, selectedCategory, sortBy, guides, currentLanguage]);
+  // Use unified filter hook with guides preset
+  const {
+    state,
+    handlers,
+    filteredData: filteredGuides,
+    activeFilterCount,
+    config,
+  } = useUnifiedFilter<Guide>({
+    preset: 'guides',
+    data: guides,
+    customSearchFn,
+    customSortFunctions,
+    categoryField: 'category',
+    typeField: 'difficulty',
+    defaultSort: 'newest',
+  });
 
 
   const getDifficultyColor = (difficulty: string) => {
@@ -117,12 +134,14 @@ const GuidesPage = () => {
             <p className="text-base sm:text-lg text-muted-foreground">{t('guides.subtitle')}</p>
           </div>
 
-          <SearchFilter
+          <UnifiedFilterUI
+            state={state}
+            handlers={handlers}
+            config={config}
+            activeFilterCount={activeFilterCount}
             placeholder={t('guides.searchPlaceholder')}
+            showResultCount={filteredGuides.length}
             categories={categoryOptions}
-            onSearchChange={setSearchTerm}
-            onCategoryChange={setSelectedCategory}
-            onSortChange={setSortBy}
           />
 
           {/* Card grid: 1 col mobile, 2 col desktop */}
@@ -143,8 +162,8 @@ const GuidesPage = () => {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                     
                     <div className="absolute top-3 left-3 flex gap-2">
-                      <Badge className={getDifficultyColor(guide.difficulty)}>
-                        {t(`difficulty.${guide.difficulty.toLowerCase()}`)}
+                      <Badge className={getDifficultyColor(guide.difficulty || '')}>
+                        {t(`difficulty.${(guide.difficulty || 'easy').toLowerCase()}`)}
                       </Badge>
                       <Badge variant="outline" className="bg-background/90 text-foreground border-0">
                         {guide.read_time}

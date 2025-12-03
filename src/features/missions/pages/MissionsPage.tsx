@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, SearchFilter, LocalizedText, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop } from "@/shared/components";
+import { Breadcrumb, LocalizedText, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop, UnifiedFilterUI } from "@/shared/components";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Target, Gift, CheckCircle } from "lucide-react";
@@ -11,6 +11,7 @@ import { getLocalizedValue } from "@/shared/utils/localization";
 import { useLanguage } from "@/shared/contexts/language-hooks";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 import { useDocumentTitle } from "@/shared/hooks/useDocumentTitle";
+import { useUnifiedFilter } from "@/shared/hooks/useUnifiedFilter";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -23,10 +24,6 @@ const MissionsPage = () => {
   
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState("newest");
 
   useEffect(() => {
     async function loadContent() {
@@ -37,68 +34,45 @@ const MissionsPage = () => {
     loadContent();
   }, []);
 
-  // Mission type filter categories
-  const categories = [
-    { value: "Daily", label: t('missionType.daily') },
-    { value: "Weekly", label: t('missionType.weekly') },
-    { value: "Challenge", label: t('missionType.challenge') },
-    { value: "Event", label: t('missionType.event') },
-    { value: "Story", label: t('missionType.story') },
-  ];
+  // Custom search function for missions
+  const customSearchFn = useMemo(() => {
+    return (item: Mission, searchTerm: string): boolean => {
+      if (!searchTerm || searchTerm.trim() === '') return true;
+      const localizedName = getLocalizedValue(item.name, currentLanguage);
+      return localizedName.toLowerCase().includes(searchTerm.toLowerCase());
+    };
+  }, [currentLanguage]);
 
-  // Mission status tags for filtering
-  const statusTags = [
-    { value: "Active", label: t('missionStatus.active') },
-    { value: "Completed", label: t('missionStatus.completed') },
-    { value: "Expired", label: t('missionStatus.expired') },
-    { value: "Locked", label: t('missionStatus.locked') },
-  ];
+  // Custom sort functions for mission-specific sorting
+  const customSortFunctions = useMemo(() => ({
+    'newest': () => 0, // Default order
+    'a-z': (a: Mission, b: Mission) => 
+      getLocalizedValue(a.name, currentLanguage).localeCompare(getLocalizedValue(b.name, currentLanguage)),
+    'z-a': (a: Mission, b: Mission) => 
+      getLocalizedValue(b.name, currentLanguage).localeCompare(getLocalizedValue(a.name, currentLanguage)),
+  }), [currentLanguage]);
 
-
-  const filteredMissions = useMemo(() => {
-    let result = missions.filter(mission => {
-      const localizedName = getLocalizedValue(mission.name, currentLanguage);
-      const matchesSearch = localizedName.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = selectedCategory === "All" || mission.type === selectedCategory;
-      const matchesStatus = selectedTags.length === 0 || selectedTags.includes(mission.mission_status);
-      return matchesSearch && matchesType && matchesStatus;
-    });
-
-    switch (sortBy) {
-      case "a-z":
-        result = [...result].sort((a, b) => 
-          getLocalizedValue(a.name, currentLanguage).localeCompare(getLocalizedValue(b.name, currentLanguage))
-        );
-        break;
-      case "z-a":
-        result = [...result].sort((a, b) => 
-          getLocalizedValue(b.name, currentLanguage).localeCompare(getLocalizedValue(a.name, currentLanguage))
-        );
-        break;
-      default:
-        break;
-    }
-
-    return result;
-  }, [searchTerm, selectedCategory, selectedTags, sortBy, missions, currentLanguage]);
+  // Use unified filter hook with missions preset
+  const {
+    state,
+    handlers,
+    filteredData: filteredMissions,
+    activeFilterCount,
+    config,
+  } = useUnifiedFilter<Mission>({
+    preset: 'missions',
+    data: missions,
+    customSearchFn,
+    customSortFunctions,
+    typeField: 'type',
+    defaultSort: 'newest',
+  });
 
   const getTypeColor = (type: string) => {
     switch (type) {
       case "Daily": return "bg-blue-500/80 text-white";
       case "Weekly": return "bg-purple-500/80 text-white";
-      case "Challenge": return "bg-orange-500/80 text-white";
       case "Event": return "bg-pink-500/80 text-white";
-      case "Story": return "bg-green-500/80 text-white";
-      default: return "bg-muted text-muted-foreground";
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Active": return "bg-accent text-accent-foreground";
-      case "Completed": return "bg-green-600 text-white";
-      case "Expired": return "bg-muted text-muted-foreground";
-      case "Locked": return "bg-gray-500 text-white";
       default: return "bg-muted text-muted-foreground";
     }
   };
@@ -133,21 +107,20 @@ const MissionsPage = () => {
             </p>
           </div>
 
-          <SearchFilter
+          <UnifiedFilterUI
+            state={state}
+            handlers={handlers}
+            config={config}
+            activeFilterCount={activeFilterCount}
             placeholder={t('missions.searchPlaceholder')}
-            categories={categories}
-            tags={statusTags}
-            onSearchChange={setSearchTerm}
-            onCategoryChange={setSelectedCategory}
-            onTagsChange={setSelectedTags}
-            onSortChange={setSortBy}
+            showResultCount={filteredMissions.length}
           />
 
           <PaginatedGrid
             items={filteredMissions}
             itemsPerPage={ITEMS_PER_PAGE}
             getKey={(mission) => mission.id}
-            resetDeps={[searchTerm, selectedCategory, selectedTags, sortBy]}
+            resetDeps={[state.search, state.type, state.sort]}
             emptyState={
               <div className="text-center py-12 sm:py-16">
                 <p className="text-base sm:text-lg text-muted-foreground">{t('missions.noResults')}</p>
@@ -171,9 +144,6 @@ const MissionsPage = () => {
                         <Badge className={getTypeColor(mission.type)}>
                           {t(`missionType.${mission.type.toLowerCase()}`)}
                         </Badge>
-                        <Badge className={getStatusColor(mission.mission_status)}>
-                          {t(`missionStatus.${mission.mission_status.toLowerCase()}`)}
-                        </Badge>
                       </div>
                     </div>
                   )}
@@ -194,9 +164,6 @@ const MissionsPage = () => {
                       <div className="flex gap-2 flex-wrap">
                         <Badge className={getTypeColor(mission.type)}>
                           {t(`missionType.${mission.type.toLowerCase()}`)}
-                        </Badge>
-                        <Badge className={getStatusColor(mission.mission_status)}>
-                          {t(`missionStatus.${mission.mission_status.toLowerCase()}`)}
                         </Badge>
                       </div>
                     )}

@@ -1,9 +1,8 @@
-import { useState, useMemo, useEffect } from "react";
+import { useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, SearchFilter, LocalizedText, ResponsiveContainer, DatasetImage, ScrollToTop } from "@/shared/components";
+import { Breadcrumb, LocalizedText, ResponsiveContainer, DatasetImage, ScrollToTop, UnifiedFilterUI } from "@/shared/components";
 import { Card, CardContent } from "@/shared/components/ui/card";
-import { Badge } from "@/shared/components/ui/badge";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -22,7 +21,9 @@ import { useLanguage } from "@/shared/contexts/language-hooks";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 import { usePagination } from "@/shared/hooks/usePagination";
 import { useDocumentTitle } from "@/shared/hooks/useDocumentTitle";
+import { useUnifiedFilter } from "@/shared/hooks/useUnifiedFilter";
 import { cn } from "@/lib/utils";
+import type { Character } from "@/content/schemas/content.schema";
 
 const ITEMS_PER_PAGE = 24;
 
@@ -33,46 +34,47 @@ const CharactersPage = () => {
   
   // Set dynamic page title (Requirements: 9.1, 9.2)
   useDocumentTitle(t('characters.title'));
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("newest");
 
+  // Custom search function that uses localized name
+  const customSearchFn = useMemo(() => {
+    return (item: Character, searchTerm: string): boolean => {
+      if (!searchTerm || searchTerm.trim() === '') return true;
+      const localizedName = getLocalizedValue(item.name, currentLanguage);
+      return localizedName.toLowerCase().includes(searchTerm.toLowerCase());
+    };
+  }, [currentLanguage]);
 
+  // Custom sort functions for character-specific sorting
+  const customSortFunctions = useMemo(() => ({
+    'newest': () => 0, // Default order (by id)
+    'a-z': (a: Character, b: Character) => 
+      getLocalizedValue(a.name, currentLanguage).localeCompare(getLocalizedValue(b.name, currentLanguage)),
+    'z-a': (a: Character, b: Character) => 
+      getLocalizedValue(b.name, currentLanguage).localeCompare(getLocalizedValue(a.name, currentLanguage)),
+    'popular': (a: Character, b: Character) => {
+      const totalA = a.stats.POW + a.stats.TEC + a.stats.STM;
+      const totalB = b.stats.POW + b.stats.TEC + b.stats.STM;
+      return totalB - totalA;
+    },
+    'pow-high': (a: Character, b: Character) => b.stats.POW - a.stats.POW,
+    'tec-high': (a: Character, b: Character) => b.stats.TEC - a.stats.TEC,
+    'stm-high': (a: Character, b: Character) => b.stats.STM - a.stats.STM,
+  }), [currentLanguage]);
 
-  const filteredAndSortedCharacters = useMemo(() => {
-    let result = characters.filter(char => {
-      const localizedName = getLocalizedValue(char.name, currentLanguage);
-      const matchesSearch = localizedName.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesSearch;
-    });
-
-    // Sort
-    switch (sortBy) {
-      case "a-z":
-        result = [...result].sort((a, b) => 
-          getLocalizedValue(a.name, currentLanguage).localeCompare(getLocalizedValue(b.name, currentLanguage))
-        );
-        break;
-      case "z-a":
-        result = [...result].sort((a, b) => 
-          getLocalizedValue(b.name, currentLanguage).localeCompare(getLocalizedValue(a.name, currentLanguage))
-        );
-        break;
-
-      case "popular":
-        // Sort by total stats as popularity indicator
-        result = [...result].sort((a, b) => {
-          const totalA = a.stats.POW + a.stats.TEC + a.stats.STM;
-          const totalB = b.stats.POW + b.stats.TEC + b.stats.STM;
-          return totalB - totalA;
-        });
-        break;
-      default:
-        break;
-    }
-
-    return result;
-    return result;
-  }, [searchTerm, sortBy, characters, currentLanguage]);
+  // Use unified filter hook
+  const {
+    state,
+    handlers,
+    filteredData: filteredAndSortedCharacters,
+    activeFilterCount,
+    config,
+  } = useUnifiedFilter<Character>({
+    preset: 'characters',
+    data: characters,
+    customSearchFn,
+    customSortFunctions,
+    defaultSort: 'newest',
+  });
 
   // Pagination
   const pagination = usePagination({
@@ -84,7 +86,7 @@ const CharactersPage = () => {
   useEffect(() => {
     pagination.reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, sortBy]);
+  }, [state.search, state.sort]);
 
   // Get paginated characters
   const paginatedCharacters = useMemo(() => 
@@ -144,10 +146,13 @@ const CharactersPage = () => {
             </p>
           </div>
 
-          <SearchFilter
+          <UnifiedFilterUI
+            state={state}
+            handlers={handlers}
+            config={config}
+            activeFilterCount={activeFilterCount}
             placeholder={t('characters.searchPlaceholder')}
-            onSearchChange={setSearchTerm}
-            onSortChange={setSortBy}
+            showResultCount={filteredAndSortedCharacters.length}
           />
 
           {/* Results count and pagination info */}

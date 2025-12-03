@@ -76,18 +76,18 @@ describe('ContentValidator', () => {
       });
     });
 
-    it('should validate difficulty for guides', () => {
+    it('should validate difficulty for quizzes', () => {
       const data = [
         {
           id: '1',
           unique_key: 'test',
-          title: 'Test',
-          status: 'published',
+          name: { en: 'Test Quiz' },
           difficulty: 'invalid',
+          questions_ref: 'quizzes/test.md',
         },
       ];
 
-      const result = validator.validateContent(data, 'guide');
+      const result = validator.validateContent(data, 'quiz');
       expect(result.errors.some(e => e.field === 'difficulty')).toBe(true);
     });
 

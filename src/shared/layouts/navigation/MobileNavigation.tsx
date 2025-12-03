@@ -17,7 +17,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Menu, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NavGroup } from "@/shared/types/navigation";
-import { isPathActive, isGroupActive } from "@/shared/config/navigation";
+import { isPathActive, isPathInSection, isGroupActive } from "@/shared/config/navigation";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 
 interface MobileNavigationProps {
@@ -174,6 +174,7 @@ export function MobileNavigation({
                       <ul className="ml-4 space-y-1" role="list">
                         {group.items.map((item) => {
                           const itemIsActive = isPathActive(currentPath, item.path);
+                          const itemIsInSection = isPathInSection(currentPath, item.path);
                           const ItemIcon = item.icon;
 
                           return (
@@ -195,7 +196,7 @@ export function MobileNavigation({
                                   "min-h-[44px] transition-colors",
                                   "hover:bg-primary/10 hover:text-primary",
                                   "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                                  itemIsActive
+                                  itemIsInSection
                                     ? "bg-primary/10 text-primary font-semibold"
                                     : "text-muted-foreground"
                                 )}

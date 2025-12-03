@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, SearchFilter, LocalizedText, ResponsiveContainer, DatasetImage, ScrollToTop } from "@/shared/components";
+import { Breadcrumb, LocalizedText, ResponsiveContainer, DatasetImage, ScrollToTop, UnifiedFilterUI } from "@/shared/components";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import {
@@ -21,6 +21,7 @@ import { useLanguage } from "@/shared/contexts/language-hooks";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 import { usePagination } from "@/shared/hooks/usePagination";
 import { useDocumentTitle } from "@/shared/hooks/useDocumentTitle";
+import { useUnifiedFilter } from "@/shared/hooks/useUnifiedFilter";
 import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 24;
@@ -35,10 +36,6 @@ const SwimsuitsPage = () => {
   const [swimsuits, setSwimsuits] = useState<Swimsuit[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState("newest");
 
   useEffect(() => {
     async function loadContent() {
@@ -50,40 +47,64 @@ const SwimsuitsPage = () => {
     loadContent();
   }, []);
 
-  const categories = [
-    { value: "SSR", label: t('rarity.ssr') },
-    { value: "SR", label: t('rarity.sr') },
-  ];
+  // Character tags for filtering swimsuits by character
+  const characterTags = useMemo(() => 
+    characters.map(c => ({ 
+      value: c.unique_key, 
+      label: getLocalizedValue(c.name, currentLanguage) 
+    })),
+    [characters, currentLanguage]
+  );
 
-  const characterTags = characters.map(c => ({ value: c.unique_key, label: getLocalizedValue(c.name, currentLanguage) }));
+  // Custom search function that uses localized name and character
+  const customSearchFn = useMemo(() => {
+    return (item: Swimsuit, searchTerm: string): boolean => {
+      if (!searchTerm || searchTerm.trim() === '') return true;
+      const localizedName = getLocalizedValue(item.name, currentLanguage);
+      const searchLower = searchTerm.toLowerCase();
+      return localizedName.toLowerCase().includes(searchLower) ||
+        item.character.toLowerCase().includes(searchLower);
+    };
+  }, [currentLanguage]);
 
-  const filteredSwimsuits = useMemo(() => {
-    let result = swimsuits.filter(suit => {
-      const localizedName = getLocalizedValue(suit.name, currentLanguage);
-      const matchesSearch = localizedName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        suit.character.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesRarity = selectedCategory === "All" || suit.rarity === selectedCategory;
-      const matchesCharacter = selectedTags.length === 0 || selectedTags.includes(suit.character_id);
-      return matchesSearch && matchesRarity && matchesCharacter;
-    });
+  // Custom sort functions for swimsuit-specific sorting
+  const customSortFunctions = useMemo(() => ({
+    'newest': () => 0, // Default order (by id)
+    'a-z': (a: Swimsuit, b: Swimsuit) => 
+      getLocalizedValue(a.name, currentLanguage).localeCompare(getLocalizedValue(b.name, currentLanguage)),
+    'z-a': (a: Swimsuit, b: Swimsuit) => 
+      getLocalizedValue(b.name, currentLanguage).localeCompare(getLocalizedValue(a.name, currentLanguage)),
+    'rarity-high': (a: Swimsuit, b: Swimsuit) => {
+      const rarityOrder = { SSR: 3, SR: 2, R: 1 };
+      return (rarityOrder[b.rarity as keyof typeof rarityOrder] || 0) - 
+             (rarityOrder[a.rarity as keyof typeof rarityOrder] || 0);
+    },
+    'pow-high': (a: Swimsuit, b: Swimsuit) => b.stats.POW - a.stats.POW,
+    'tec-high': (a: Swimsuit, b: Swimsuit) => b.stats.TEC - a.stats.TEC,
+    'stm-high': (a: Swimsuit, b: Swimsuit) => b.stats.STM - a.stats.STM,
+  }), [currentLanguage]);
 
-    switch (sortBy) {
-      case "a-z":
-        result = [...result].sort((a, b) => 
-          getLocalizedValue(a.name, currentLanguage).localeCompare(getLocalizedValue(b.name, currentLanguage))
-        );
-        break;
-      case "z-a":
-        result = [...result].sort((a, b) => 
-          getLocalizedValue(b.name, currentLanguage).localeCompare(getLocalizedValue(a.name, currentLanguage))
-        );
-        break;
-      default:
-        break;
-    }
+  // Tag field extractor for character filtering
+  const tagFieldFn = useMemo(() => {
+    return (item: Swimsuit): string[] => [item.character_id];
+  }, []);
 
-    return result;
-  }, [searchTerm, selectedCategory, selectedTags, sortBy, swimsuits, currentLanguage]);
+  // Use unified filter hook
+  const {
+    state,
+    handlers,
+    filteredData: filteredSwimsuits,
+    activeFilterCount,
+    config,
+  } = useUnifiedFilter<Swimsuit>({
+    preset: 'swimsuits',
+    data: swimsuits,
+    customSearchFn,
+    customSortFunctions,
+    tagField: tagFieldFn,
+    rarityField: 'rarity',
+    defaultSort: 'newest',
+  });
 
   // Pagination
   const pagination = usePagination({
@@ -94,7 +115,8 @@ const SwimsuitsPage = () => {
   // Reset pagination when filters change
   useEffect(() => {
     pagination.reset();
-  }, [searchTerm, selectedCategory, selectedTags, sortBy, pagination]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.search, state.rarity, state.tags, state.sort]);
 
   // Get paginated swimsuits
   const paginatedSwimsuits = useMemo(() => 
@@ -141,14 +163,14 @@ const SwimsuitsPage = () => {
             </p>
           </div>
 
-          <SearchFilter
+          <UnifiedFilterUI
+            state={state}
+            handlers={handlers}
+            config={config}
+            activeFilterCount={activeFilterCount}
             placeholder={t('swimsuits.searchPlaceholder')}
-            categories={categories}
+            showResultCount={filteredSwimsuits.length}
             tags={characterTags}
-            onSearchChange={setSearchTerm}
-            onCategoryChange={setSelectedCategory}
-            onTagsChange={setSelectedTags}
-            onSortChange={setSortBy}
           />
 
           {/* Results count and pagination info */}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, SearchFilter, LocalizedText, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop } from "@/shared/components";
+import { Breadcrumb, LocalizedText, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop, UnifiedFilterUI } from "@/shared/components";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -10,6 +10,7 @@ import { contentLoader } from "@/content";
 import type { Episode } from "@/content";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 import { useDocumentTitle } from "@/shared/hooks/useDocumentTitle";
+import { useUnifiedFilter } from "@/shared/hooks/useUnifiedFilter";
 
 const ITEMS_PER_PAGE = 24;
 
@@ -21,9 +22,6 @@ const EpisodesPage = () => {
   
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [sortBy, setSortBy] = useState("newest");
 
   useEffect(() => {
     async function loadContent() {
@@ -34,41 +32,41 @@ const EpisodesPage = () => {
     loadContent();
   }, []);
 
-  const categories = [
-    { value: "Character", label: t('filters.character') },
-    { value: "Gravure", label: t('filters.gravure') },
-    { value: "Event", label: t('filters.event') },
-    { value: "Extra", label: t('filters.extra') },
-    { value: "Bromide", label: t('filters.bromide') },
-  ];
+  // Custom search function for episodes
+  const customSearchFn = useMemo(() => {
+    return (item: Episode, searchTerm: string): boolean => {
+      if (!searchTerm || searchTerm.trim() === '') return true;
+      return item.title.toLowerCase().includes(searchTerm.toLowerCase());
+    };
+  }, []);
 
-  const filteredEpisodes = useMemo(() => {
-    let result = episodes.filter(episode => {
-      const matchesSearch = episode.title.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = selectedCategory === "All" || episode.type === selectedCategory;
-      return matchesSearch && matchesType;
-    });
+  // Custom sort functions for episode-specific sorting
+  const customSortFunctions = useMemo(() => ({
+    'newest': (a: Episode, b: Episode) => {
+      const dateA = a.release_date ? new Date(a.release_date).getTime() : 0;
+      const dateB = b.release_date ? new Date(b.release_date).getTime() : 0;
+      return dateB - dateA;
+    },
+    'a-z': (a: Episode, b: Episode) => a.title.localeCompare(b.title),
+    'z-a': (a: Episode, b: Episode) => b.title.localeCompare(a.title),
+  }), []);
 
-    switch (sortBy) {
-      case "a-z":
-        result = [...result].sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      case "z-a":
-        result = [...result].sort((a, b) => b.title.localeCompare(a.title));
-        break;
-      case "newest":
-        result = [...result].sort((a, b) => {
-          const dateA = a.release_date ? new Date(a.release_date).getTime() : 0;
-          const dateB = b.release_date ? new Date(b.release_date).getTime() : 0;
-          return dateB - dateA;
-        });
-        break;
-      default:
-        break;
-    }
-
-    return result;
-  }, [searchTerm, selectedCategory, sortBy, episodes]);
+  // Use unified filter hook with episodes preset
+  const {
+    state,
+    handlers,
+    filteredData: filteredEpisodes,
+    activeFilterCount,
+    config,
+  } = useUnifiedFilter<Episode>({
+    preset: 'episodes',
+    data: episodes,
+    customSearchFn,
+    customSortFunctions,
+    statusField: 'episode_status',
+    typeField: 'type',
+    defaultSort: 'newest',
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -138,12 +136,13 @@ const EpisodesPage = () => {
             <p className="text-base sm:text-lg text-muted-foreground">{t('episodes.subtitle')}</p>
           </div>
 
-          <SearchFilter
+          <UnifiedFilterUI
+            state={state}
+            handlers={handlers}
+            config={config}
+            activeFilterCount={activeFilterCount}
             placeholder={t('episodes.searchPlaceholder')}
-            categories={categories}
-            onSearchChange={setSearchTerm}
-            onCategoryChange={setSelectedCategory}
-            onSortChange={setSortBy}
+            showResultCount={filteredEpisodes.length}
           />
 
           <PaginatedGrid
@@ -151,7 +150,7 @@ const EpisodesPage = () => {
             itemsPerPage={ITEMS_PER_PAGE}
             getKey={(episode) => episode.id}
             gridClassName="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
-            resetDeps={[searchTerm, selectedCategory, sortBy]}
+            resetDeps={[state.search, state.type, state.status, state.sort]}
             emptyState={
               <div className="text-center py-12 sm:py-16">
                 <p className="text-base sm:text-lg text-muted-foreground">{t('episodes.noResults')}</p>

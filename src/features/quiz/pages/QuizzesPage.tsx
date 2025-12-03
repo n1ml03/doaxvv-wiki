@@ -3,21 +3,13 @@
  * Main quiz hub displaying available quizzes with search, filter, and stats
  */
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Header } from '@/shared/layouts';
-import { Breadcrumb, ResponsiveContainer, DatasetImage, ScrollToTop } from '@/shared/components';
-import { Input } from '@/shared/components/ui/input';
+import { Breadcrumb, ResponsiveContainer, DatasetImage, ScrollToTop, UnifiedFilterUI } from '@/shared/components';
 import { Card, CardContent, CardDescription, CardHeader } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,8 +20,6 @@ import {
   Clock,
   HelpCircle,
   Trophy,
-  Search,
-  SortAsc,
   BarChart3,
   FileSpreadsheet,
   CheckCircle2,
@@ -37,11 +27,12 @@ import {
 import { useQuizzes } from '../hooks/useQuizzes';
 import { useQuizResults } from '../hooks/useQuizResults';
 import { getResultsSummary, downloadCSV } from '../services/export.service';
-import type { QuizDifficulty } from '../types';
+import type { QuizDifficulty, Quiz } from '../types';
 import { useLanguage } from '@/shared/contexts/language-hooks';
 import { getLocalizedValue } from '@/shared/utils/localization';
 import { useTranslation } from '@/shared/hooks/useTranslation';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
+import { useUnifiedFilter } from '@/shared/hooks/useUnifiedFilter';
 
 function formatTimeLimit(seconds: number): string {
   if (seconds === 0) return 'No limit';
@@ -72,73 +63,66 @@ const QuizzesPage = () => {
   useDocumentTitle(t('quiz.title') || 'Quizzes');
 
   const {
-    filteredData,
+    filteredData: quizzes,
     isLoading,
     error,
     refetch,
-    searchTerm,
-    setSearchTerm,
   } = useQuizzes();
 
   const { results } = useQuizResults();
 
-  const [sortBy, setSortBy] = useState('newest');
-  const [difficultyFilter, setDifficultyFilter] = useState<string>('All');
+  // Custom search function for quizzes
+  const customSearchFn = useMemo(() => {
+    return (item: Quiz, searchTerm: string): boolean => {
+      if (!searchTerm || searchTerm.trim() === '') return true;
+      const name = getLocalizedValue(item.name, currentLanguage);
+      const description = getLocalizedValue(item.description, currentLanguage);
+      return name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             description.toLowerCase().includes(searchTerm.toLowerCase());
+    };
+  }, [currentLanguage]);
 
-  const displayedQuizzes = useMemo(() => {
-    let result = [...filteredData];
+  // Custom sort functions for quiz-specific sorting
+  const customSortFunctions = useMemo(() => {
+    const difficultyOrder = { Easy: 1, Medium: 2, Hard: 3 };
+    return {
+      'newest': () => 0, // Default order
+      'a-z': (a: Quiz, b: Quiz) =>
+        getLocalizedValue(a.name, currentLanguage).localeCompare(
+          getLocalizedValue(b.name, currentLanguage)
+        ),
+      'z-a': (a: Quiz, b: Quiz) =>
+        getLocalizedValue(b.name, currentLanguage).localeCompare(
+          getLocalizedValue(a.name, currentLanguage)
+        ),
+      'difficulty-asc': (a: Quiz, b: Quiz) =>
+        difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty],
+      'difficulty-desc': (a: Quiz, b: Quiz) =>
+        difficultyOrder[b.difficulty] - difficultyOrder[a.difficulty],
+    };
+  }, [currentLanguage]);
 
-    if (difficultyFilter !== 'All') {
-      result = result.filter((quiz) => quiz.difficulty === difficultyFilter);
-    }
-
-    switch (sortBy) {
-      case 'a-z':
-        result.sort((a, b) =>
-          getLocalizedValue(a.name, currentLanguage).localeCompare(
-            getLocalizedValue(b.name, currentLanguage)
-          )
-        );
-        break;
-      case 'z-a':
-        result.sort((a, b) =>
-          getLocalizedValue(b.name, currentLanguage).localeCompare(
-            getLocalizedValue(a.name, currentLanguage)
-          )
-        );
-        break;
-      case 'difficulty-asc':
-        result.sort((a, b) => {
-          const order = { Easy: 1, Medium: 2, Hard: 3 };
-          return order[a.difficulty] - order[b.difficulty];
-        });
-        break;
-      case 'difficulty-desc':
-        result.sort((a, b) => {
-          const order = { Easy: 1, Medium: 2, Hard: 3 };
-          return order[b.difficulty] - order[a.difficulty];
-        });
-        break;
-      default:
-        break;
-    }
-
-    return result;
-  }, [filteredData, difficultyFilter, sortBy, currentLanguage]);
+  // Use unified filter hook with quizzes preset
+  const {
+    state,
+    handlers,
+    filteredData: displayedQuizzes,
+    activeFilterCount,
+    config,
+  } = useUnifiedFilter<Quiz>({
+    preset: 'quizzes',
+    data: quizzes,
+    customSearchFn,
+    customSortFunctions,
+    typeField: 'difficulty',
+    defaultSort: 'newest',
+  });
 
   const getBestScore = (quizId: string): number | null => {
     const quizResults = results.filter((r) => r.quizId === quizId);
     if (quizResults.length === 0) return null;
     return Math.max(...quizResults.map((r) => r.percentage));
   };
-
-  const sortOptions = [
-    { value: 'newest', label: t('sort.newest') || 'Newest' },
-    { value: 'a-z', label: t('sort.az') || 'A-Z' },
-    { value: 'z-a', label: t('sort.za') || 'Z-A' },
-    { value: 'difficulty-asc', label: t('quiz.sortDifficultyAsc') || 'Easiest First' },
-    { value: 'difficulty-desc', label: t('quiz.sortDifficultyDesc') || 'Hardest First' },
-  ];
 
   const resultsSummary = useMemo(() => getResultsSummary(results), [results]);
 
@@ -181,139 +165,112 @@ const QuizzesPage = () => {
           ) : (
             <div className="space-y-6">
               {/* Filters */}
-              <div className="flex flex-col md:flex-row gap-3">
-                <div className="relative flex-1 flex gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder={t('quiz.searchPlaceholder') || 'Search quizzes...'}
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 h-11 bg-card border-border/50"
-                    />
-                  </div>
-
-                  {/* Results Summary Dropdown */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-11 w-11 shrink-0 bg-card border-border/50"
-                      >
-                        <BarChart3 className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-72 p-0">
-                      <div className="p-4 border-b border-border/50 bg-gradient-to-br from-primary/5 to-accent/5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <BarChart3 className="h-4 w-4 text-primary" />
-                          <span className="font-semibold text-foreground">
-                            {t('results.yourStats') || 'Your Stats'}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {t('results.statsDescription') || 'Your quiz performance summary'}
-                        </p>
-                      </div>
-
-                      <div className="p-4 space-y-3">
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="p-3 rounded-lg bg-muted/50 text-center">
-                            <div className="flex items-center justify-center gap-1.5 mb-1">
-                              <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            </div>
-                            <div className="text-xl font-bold text-foreground">
-                              {resultsSummary.totalResults}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {t('results.completed') || 'Completed'}
-                            </div>
-                          </div>
-
-                          <div className="p-3 rounded-lg bg-muted/50 text-center">
-                            <div className="flex items-center justify-center gap-1.5 mb-1">
-                              <Trophy className="h-4 w-4 text-yellow-500" />
-                            </div>
-                            <div className="text-xl font-bold text-foreground">
-                              {resultsSummary.totalResults > 0
-                                ? `${resultsSummary.averagePercentage.toFixed(0)}%`
-                                : '-'}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {t('results.avgScore') || 'Avg Score'}
-                            </div>
-                          </div>
-
-                          <div className="p-3 rounded-lg bg-muted/50 text-center">
-                            <div className="flex items-center justify-center gap-1.5 mb-1">
-                              <Clock className="h-4 w-4 text-blue-500" />
-                            </div>
-                            <div className="text-xl font-bold text-foreground">
-                              {resultsSummary.totalResults > 0
-                                ? formatTime(resultsSummary.averageTimeTaken)
-                                : '-'}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {t('results.avgTime') || 'Avg Time'}
-                            </div>
-                          </div>
-
-                          <div className="p-3 rounded-lg bg-muted/50 text-center">
-                            <div className="flex items-center justify-center gap-1.5 mb-1">
-                              <HelpCircle className="h-4 w-4 text-purple-500" />
-                            </div>
-                            <div className="text-xl font-bold text-foreground">
-                              {resultsSummary.uniqueQuizzes}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {t('results.uniqueQuizzes') || 'Unique Quizzes'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="p-3 border-t border-border/50">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full gap-2"
-                          onClick={() => downloadCSV(results)}
-                          disabled={results.length === 0}
-                        >
-                          <FileSpreadsheet className="h-4 w-4" />
-                          {t('results.exportCSV') || 'Export to CSV'}
-                        </Button>
-                      </div>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <UnifiedFilterUI
+                    state={state}
+                    handlers={handlers}
+                    config={config}
+                    activeFilterCount={activeFilterCount}
+                    placeholder={t('quiz.searchPlaceholder') || 'Search quizzes...'}
+                    showResultCount={displayedQuizzes.length}
+                  />
                 </div>
 
-                <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-                  <SelectTrigger className="w-full md:w-[140px] h-11 bg-card border-border/50">
-                    <SelectValue placeholder={t('quiz.difficulty') || 'Difficulty'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="All">{t('filter.all') || 'All'}</SelectItem>
-                    <SelectItem value="Easy">{t('difficulty.easy') || 'Easy'}</SelectItem>
-                    <SelectItem value="Medium">{t('difficulty.medium') || 'Medium'}</SelectItem>
-                    <SelectItem value="Hard">{t('difficulty.hard') || 'Hard'}</SelectItem>
-                  </SelectContent>
-                </Select>
+                {/* Results Summary Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-11 w-11 shrink-0 bg-card border-border/50"
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-72 p-0">
+                    <div className="p-4 border-b border-border/50 bg-gradient-to-br from-primary/5 to-accent/5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <BarChart3 className="h-4 w-4 text-primary" />
+                        <span className="font-semibold text-foreground">
+                          {t('results.yourStats') || 'Your Stats'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {t('results.statsDescription') || 'Your quiz performance summary'}
+                      </p>
+                    </div>
 
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-full md:w-[150px] h-11 bg-card border-border/50">
-                    <SortAsc className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder={t('filter.sortBy') || 'Sort'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sortOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    <div className="p-4 space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 rounded-lg bg-muted/50 text-center">
+                          <div className="flex items-center justify-center gap-1.5 mb-1">
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          </div>
+                          <div className="text-xl font-bold text-foreground">
+                            {resultsSummary.totalResults}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {t('results.completed') || 'Completed'}
+                          </div>
+                        </div>
+
+                        <div className="p-3 rounded-lg bg-muted/50 text-center">
+                          <div className="flex items-center justify-center gap-1.5 mb-1">
+                            <Trophy className="h-4 w-4 text-yellow-500" />
+                          </div>
+                          <div className="text-xl font-bold text-foreground">
+                            {resultsSummary.totalResults > 0
+                              ? `${resultsSummary.averagePercentage.toFixed(0)}%`
+                              : '-'}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {t('results.avgScore') || 'Avg Score'}
+                          </div>
+                        </div>
+
+                        <div className="p-3 rounded-lg bg-muted/50 text-center">
+                          <div className="flex items-center justify-center gap-1.5 mb-1">
+                            <Clock className="h-4 w-4 text-blue-500" />
+                          </div>
+                          <div className="text-xl font-bold text-foreground">
+                            {resultsSummary.totalResults > 0
+                              ? formatTime(resultsSummary.averageTimeTaken)
+                              : '-'}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {t('results.avgTime') || 'Avg Time'}
+                          </div>
+                        </div>
+
+                        <div className="p-3 rounded-lg bg-muted/50 text-center">
+                          <div className="flex items-center justify-center gap-1.5 mb-1">
+                            <HelpCircle className="h-4 w-4 text-purple-500" />
+                          </div>
+                          <div className="text-xl font-bold text-foreground">
+                            {resultsSummary.uniqueQuizzes}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {t('results.uniqueQuizzes') || 'Unique Quizzes'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-3 border-t border-border/50">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-2"
+                        onClick={() => downloadCSV(results)}
+                        disabled={results.length === 0}
+                      >
+                        <FileSpreadsheet className="h-4 w-4" />
+                        {t('results.exportCSV') || 'Export to CSV'}
+                      </Button>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
 

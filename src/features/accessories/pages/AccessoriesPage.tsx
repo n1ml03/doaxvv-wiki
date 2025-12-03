@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, SearchFilter, LocalizedText, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop } from "@/shared/components";
+import { Breadcrumb, LocalizedText, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop, UnifiedFilterUI } from "@/shared/components";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Gem } from "lucide-react";
@@ -11,6 +11,7 @@ import { getLocalizedValue } from "@/shared/utils/localization";
 import { useLanguage } from "@/shared/contexts/language-hooks";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 import { useDocumentTitle } from "@/shared/hooks/useDocumentTitle";
+import { useUnifiedFilter } from "@/shared/hooks/useUnifiedFilter";
 
 const ITEMS_PER_PAGE = 24;
 
@@ -24,10 +25,6 @@ const AccessoriesPage = () => {
   const [accessories, setAccessories] = useState<Accessory[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState("newest");
 
   useEffect(() => {
     async function loadContent() {
@@ -39,47 +36,53 @@ const AccessoriesPage = () => {
     loadContent();
   }, []);
 
-  // Rarity filter categories
-  const categories = [
-    { value: "SSR", label: t('rarity.ssr') },
-    { value: "SR", label: t('rarity.sr') },
-    { value: "R", label: t('rarity.r') },
-    { value: "N", label: t('rarity.n') },
-  ];
-
   // Character tags for filtering
-  const characterTags = characters.map(c => ({ 
+  const characterTags = useMemo(() => characters.map(c => ({ 
     value: c.unique_key, 
     label: getLocalizedValue(c.name, currentLanguage) 
-  }));
+  })), [characters, currentLanguage]);
 
-  const filteredAccessories = useMemo(() => {
-    let result = accessories.filter(accessory => {
-      const localizedName = getLocalizedValue(accessory.name, currentLanguage);
-      const matchesSearch = localizedName.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesRarity = selectedCategory === "All" || accessory.rarity === selectedCategory;
-      const matchesCharacter = selectedTags.length === 0 || 
-        accessory.character_ids.some(charId => selectedTags.includes(charId));
-      return matchesSearch && matchesRarity && matchesCharacter;
-    });
+  // Custom search function for accessories
+  const customSearchFn = useMemo(() => {
+    return (item: Accessory, searchTerm: string): boolean => {
+      if (!searchTerm || searchTerm.trim() === '') return true;
+      const localizedName = getLocalizedValue(item.name, currentLanguage);
+      return localizedName.toLowerCase().includes(searchTerm.toLowerCase());
+    };
+  }, [currentLanguage]);
 
-    switch (sortBy) {
-      case "a-z":
-        result = [...result].sort((a, b) => 
-          getLocalizedValue(a.name, currentLanguage).localeCompare(getLocalizedValue(b.name, currentLanguage))
-        );
-        break;
-      case "z-a":
-        result = [...result].sort((a, b) => 
-          getLocalizedValue(b.name, currentLanguage).localeCompare(getLocalizedValue(a.name, currentLanguage))
-        );
-        break;
-      default:
-        break;
-    }
+  // Custom sort functions for accessory-specific sorting
+  const customSortFunctions = useMemo(() => {
+    const rarityOrder = { SSR: 4, SR: 3, R: 2, N: 1 };
+    return {
+      'newest': () => 0, // Default order
+      'a-z': (a: Accessory, b: Accessory) => 
+        getLocalizedValue(a.name, currentLanguage).localeCompare(getLocalizedValue(b.name, currentLanguage)),
+      'z-a': (a: Accessory, b: Accessory) => 
+        getLocalizedValue(b.name, currentLanguage).localeCompare(getLocalizedValue(a.name, currentLanguage)),
+      'rarity-high': (a: Accessory, b: Accessory) => 
+        (rarityOrder[b.rarity as keyof typeof rarityOrder] || 0) - 
+        (rarityOrder[a.rarity as keyof typeof rarityOrder] || 0),
+    };
+  }, [currentLanguage]);
 
-    return result;
-  }, [searchTerm, selectedCategory, selectedTags, sortBy, accessories, currentLanguage]);
+  // Use unified filter hook with accessories preset
+  const {
+    state,
+    handlers,
+    filteredData: filteredAccessories,
+    activeFilterCount,
+    config,
+  } = useUnifiedFilter<Accessory>({
+    preset: 'accessories',
+    data: accessories,
+    customSearchFn,
+    customSortFunctions,
+    rarityField: 'rarity',
+    typeField: 'obtain_method',
+    tagField: (item) => item.character_ids,
+    defaultSort: 'newest',
+  });
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
@@ -121,21 +124,21 @@ const AccessoriesPage = () => {
             </p>
           </div>
 
-          <SearchFilter
+          <UnifiedFilterUI
+            state={state}
+            handlers={handlers}
+            config={config}
+            activeFilterCount={activeFilterCount}
             placeholder={t('accessories.searchPlaceholder')}
-            categories={categories}
+            showResultCount={filteredAccessories.length}
             tags={characterTags}
-            onSearchChange={setSearchTerm}
-            onCategoryChange={setSelectedCategory}
-            onTagsChange={setSelectedTags}
-            onSortChange={setSortBy}
           />
 
           <PaginatedGrid
             items={filteredAccessories}
             itemsPerPage={ITEMS_PER_PAGE}
             getKey={(accessory) => accessory.id}
-            resetDeps={[searchTerm, selectedCategory, selectedTags, sortBy]}
+            resetDeps={[state.search, state.rarity, state.type, state.tags, state.sort]}
             emptyState={
               <div className="text-center py-12 sm:py-16">
                 <p className="text-base sm:text-lg text-muted-foreground">{t('accessories.noResults')}</p>

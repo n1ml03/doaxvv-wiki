@@ -57,9 +57,17 @@ export const navigationGroups: NavGroup[] = [
 
 /**
  * Helper function to check if a path is active
- * Matches exact path or child routes
+ * Only matches exact path (not child routes like detail pages)
  */
 export const isPathActive = (currentPath: string, targetPath: string): boolean => {
+  return currentPath === targetPath;
+};
+
+/**
+ * Helper function to check if a path belongs to a section
+ * Matches exact path or child routes (for group highlighting)
+ */
+export const isPathInSection = (currentPath: string, targetPath: string): boolean => {
   return currentPath === targetPath || currentPath.startsWith(targetPath + "/");
 };
 
@@ -67,5 +75,5 @@ export const isPathActive = (currentPath: string, targetPath: string): boolean =
  * Helper function to check if any item in a group is active
  */
 export const isGroupActive = (currentPath: string, group: NavGroup): boolean => {
-  return group.items.some((item) => isPathActive(currentPath, item.path));
+  return group.items.some((item) => isPathInSection(currentPath, item.path));
 };
