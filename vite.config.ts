@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import mkcert from 'vite-plugin-mkcert'
 import path from 'path'
 
 // https://vitejs.dev/config/
@@ -11,6 +12,9 @@ export default defineConfig({
           ['babel-plugin-react-compiler', {}]
         ]
       }
+    }),
+    mkcert({
+      hosts: ['project-doaxvv.local', 'localhost', '127.0.0.1']
     })
   ],
   resolve: {
@@ -26,6 +30,7 @@ export default defineConfig({
     host: true, // Bind to all network interfaces for cross-device access
     port: 5173,
     strictPort: false, // Allow fallback to another port if 5173 is busy
+    allowedHosts: ['.local'], // Only allow *.local domains
   },
   preview: {
     host: true,

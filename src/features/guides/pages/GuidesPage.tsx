@@ -41,19 +41,12 @@ const GuidesPage = () => {
 
   // Custom sort functions for guide-specific sorting
   const customSortFunctions = useMemo(() => {
-    const difficultyOrder = { Easy: 1, Medium: 2, Hard: 3 };
     return {
       'newest': () => 0, // Default order
       'a-z': (a: Guide, b: Guide) => 
         getLocalizedValue(a.localizedTitle, currentLanguage).localeCompare(getLocalizedValue(b.localizedTitle, currentLanguage)),
       'z-a': (a: Guide, b: Guide) => 
         getLocalizedValue(b.localizedTitle, currentLanguage).localeCompare(getLocalizedValue(a.localizedTitle, currentLanguage)),
-      'difficulty-asc': (a: Guide, b: Guide) => 
-        (difficultyOrder[a.difficulty as keyof typeof difficultyOrder] || 0) - 
-        (difficultyOrder[b.difficulty as keyof typeof difficultyOrder] || 0),
-      'difficulty-desc': (a: Guide, b: Guide) => 
-        (difficultyOrder[b.difficulty as keyof typeof difficultyOrder] || 0) - 
-        (difficultyOrder[a.difficulty as keyof typeof difficultyOrder] || 0),
     };
   }, [currentLanguage]);
 
@@ -70,19 +63,9 @@ const GuidesPage = () => {
     customSearchFn,
     customSortFunctions,
     categoryField: 'category',
-    typeField: 'difficulty',
     defaultSort: 'newest',
   });
 
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case "Easy": return "bg-accent text-accent-foreground";
-      case "Medium": return "bg-primary text-primary-foreground";
-      case "Hard": return "bg-destructive text-destructive-foreground";
-      default: return "bg-muted text-muted-foreground";
-    }
-  };
 
   if (loading) {
     return (
@@ -160,9 +143,6 @@ const GuidesPage = () => {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                     
                     <div className="absolute top-3 left-3 flex gap-2">
-                      <Badge className={getDifficultyColor(guide.difficulty || '')}>
-                        {t(`difficulty.${(guide.difficulty || 'easy').toLowerCase()}`)}
-                      </Badge>
                       <Badge variant="outline" className="bg-background/90 text-foreground border-0">
                         {guide.read_time}
                       </Badge>
