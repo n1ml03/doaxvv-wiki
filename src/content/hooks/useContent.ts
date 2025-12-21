@@ -1,10 +1,11 @@
 /**
  * useContent Hook
- * Generic React hook for loading content types with lazy loading
- * Provides loading state, error handling, and refetch functionality
+ * TanStack Query-based hook for loading content types
+ * Provides caching, deduplication, and background refetching
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useQuery, UseQueryResult } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-client';
 import { ContentLoader, ContentType } from '../loader';
 import type {
   Guide,
@@ -19,11 +20,11 @@ import type {
   Tool,
   Accessory,
   Mission,
+  Quiz,
 } from '../schemas/content.schema';
 
 export interface UseContentOptions {
   enabled?: boolean;
-  onError?: (error: Error) => void;
 }
 
 export interface UseContentResult<T> {
@@ -33,114 +34,58 @@ export interface UseContentResult<T> {
   refetch: () => Promise<void>;
 }
 
+// Content loader instance
+const loader = ContentLoader.getInstance();
+
+// Ensure initialization
+const ensureInitialized = async () => {
+  await loader.initialize();
+};
+
+// Query function factory
+const createQueryFn = <T>(loadFn: () => Promise<T[]>) => async (): Promise<T[]> => {
+  await ensureInitialized();
+  return loadFn();
+};
+
+// Content type to query key and loader mapping
+const contentConfig: Record<ContentType, { queryKey: readonly unknown[]; loadFn: () => Promise<unknown[]> }> = {
+  characters: { queryKey: queryKeys.content.characters(), loadFn: () => loader.loadCharacters() },
+  guides: { queryKey: queryKeys.content.guides(), loadFn: () => loader.loadGuides() },
+  events: { queryKey: queryKeys.content.events(), loadFn: () => loader.loadEvents() },
+  swimsuits: { queryKey: queryKeys.content.swimsuits(), loadFn: () => loader.loadSwimsuits() },
+  items: { queryKey: queryKeys.content.items(), loadFn: () => loader.loadItems() },
+  episodes: { queryKey: queryKeys.content.episodes(), loadFn: () => loader.loadEpisodes() },
+  gachas: { queryKey: queryKeys.content.gachas(), loadFn: () => loader.loadGachas() },
+  categories: { queryKey: queryKeys.content.categories(), loadFn: () => loader.loadCategories() },
+  tags: { queryKey: queryKeys.content.tags(), loadFn: () => loader.loadTags() },
+  tools: { queryKey: queryKeys.content.tools(), loadFn: () => loader.loadTools() },
+  accessories: { queryKey: queryKeys.content.accessories(), loadFn: () => loader.loadAccessories() },
+  missions: { queryKey: queryKeys.content.missions(), loadFn: () => loader.loadMissions() },
+  festivals: { queryKey: queryKeys.content.festivals(), loadFn: () => loader.loadFestivals() },
+  quizzes: { queryKey: queryKeys.content.quizzes(), loadFn: () => loader.loadQuizzes() },
+};
+
 /**
- * Generic hook for loading content by type
- * Integrates with ContentLoader for on-demand lazy loading
+ * Generic hook for loading content by type using TanStack Query
  */
 export function useContent<T>(
   contentType: ContentType,
   options: UseContentOptions = {}
 ): UseContentResult<T> {
-  const { enabled = true, onError } = options;
-  
-  const [data, setData] = useState<T[] | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<Error | null>(null);
-  
-  const loaderRef = useRef<ContentLoader>(ContentLoader.getInstance());
-  const isMountedRef = useRef<boolean>(true);
+  const { enabled = true } = options;
+  const config = contentConfig[contentType];
 
-  const loadContent = useCallback(async () => {
-    if (!enabled) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      let result: any[];
-
-      switch (contentType) {
-        case 'characters':
-          result = await loaderRef.current.loadCharacters();
-          break;
-        case 'guides':
-          result = await loaderRef.current.loadGuides();
-          break;
-        case 'events':
-          result = await loaderRef.current.loadEvents();
-          break;
-        case 'swimsuits':
-          result = await loaderRef.current.loadSwimsuits();
-          break;
-        case 'items':
-          result = await loaderRef.current.loadItems();
-          break;
-        case 'episodes':
-          result = await loaderRef.current.loadEpisodes();
-          break;
-        case 'gachas':
-          result = await loaderRef.current.loadGachas();
-          break;
-        case 'categories':
-          result = await loaderRef.current.loadCategories();
-          break;
-        case 'tags':
-          result = await loaderRef.current.loadTags();
-          break;
-        case 'tools':
-          result = await loaderRef.current.loadTools();
-          break;
-        case 'accessories':
-          result = await loaderRef.current.loadAccessories();
-          break;
-        case 'missions':
-          result = await loaderRef.current.loadMissions();
-          break;
-        default:
-          throw new Error(`Unknown content type: ${contentType}`);
-      }
-
-      // Only update state if component is still mounted
-      if (isMountedRef.current) {
-        setData(result as T[]);
-        setIsLoading(false);
-      }
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      
-      // Only update state if component is still mounted
-      if (isMountedRef.current) {
-        setError(error);
-        setIsLoading(false);
-        
-        // Call error callback if provided
-        if (onError) {
-          onError(error);
-        }
-      }
-    }
-  }, [contentType, enabled, onError]);
-
-  // Load content on mount or when dependencies change
-  useEffect(() => {
-    loadContent();
-  }, [loadContent]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  const refetch = useCallback(async () => {
-    await loadContent();
-  }, [loadContent]);
+  const query = useQuery({
+    queryKey: config.queryKey,
+    queryFn: createQueryFn(config.loadFn),
+    enabled,
+  });
 
   return {
-    data,
-    isLoading,
-    error,
-    refetch,
+    data: query.data as T[] | undefined,
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: async () => { await query.refetch(); },
   };
 }

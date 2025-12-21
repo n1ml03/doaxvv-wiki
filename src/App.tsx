@@ -1,19 +1,39 @@
-import { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/shared/components/ui/toaster";
 import { Toaster as Sonner } from "@/shared/components/ui/sonner";
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
 import { ThemeProvider } from "@/shared/components/ThemeProvider";
 import { CustomContextMenu } from "@/shared/components";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-
-// Scroll to top on route change
-const useScrollToTop = () => {
-  const { pathname } = useLocation();
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
-};
+import { QueryClientProvider } from "@tanstack/react-query";
+import { createBrowserRouter, RouterProvider, Outlet, useNavigation, ScrollRestoration } from "react-router-dom";
+import { queryClient } from "@/lib/query-client";
+import {
+  homeLoader,
+  charactersLoader,
+  characterDetailLoader,
+  eventsLoader,
+  eventDetailLoader,
+  swimsuitsLoader,
+  swimsuitDetailLoader,
+  guidesLoader,
+  guideDetailLoader,
+  gachasLoader,
+  gachaDetailLoader,
+  itemsLoader,
+  itemDetailLoader,
+  episodesLoader,
+  episodeDetailLoader,
+  accessoriesLoader,
+  accessoryDetailLoader,
+  missionsLoader,
+  missionDetailLoader,
+  festivalsLoader,
+  festivalDetailLoader,
+  toolsLoader,
+  toolDetailLoader,
+  quizzesLoader,
+  quizDetailLoader,
+} from "@/lib/loaders";
 
 // Lazy load feature pages
 const HomePage = lazy(() => import("@/features/home").then(m => ({ default: m.HomePage })));
@@ -46,13 +66,80 @@ const QuizResultPage = lazy(() => import("@/features/quiz").then(m => ({ default
 const SearchResultsPage = lazy(() => import("@/features/search").then(m => ({ default: m.SearchResultsPage })));
 const NotFoundPage = lazy(() => import("@/shared/pages").then(m => ({ default: m.NotFoundPage })));
 
-const queryClient = new QueryClient();
-
+// Loading fallback component
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
   </div>
 );
+
+// Global loading indicator for route transitions
+const GlobalLoadingIndicator = () => {
+  const navigation = useNavigation();
+  
+  if (navigation.state === "loading") {
+    return (
+      <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-primary/20">
+        <div className="h-full bg-primary animate-pulse" style={{ width: '100%' }} />
+      </div>
+    );
+  }
+  
+  return null;
+};
+
+// Root layout component
+const RootLayout = () => (
+  <>
+    <GlobalLoadingIndicator />
+    <ScrollRestoration />
+    <Suspense fallback={<LoadingFallback />}>
+      <Outlet />
+    </Suspense>
+  </>
+);
+
+// Create router with data APIs
+const router = createBrowserRouter([
+  {
+    element: <RootLayout />,
+    children: [
+      { path: "/", element: <HomePage />, loader: homeLoader },
+      { path: "/girls", element: <CharactersPage />, loader: charactersLoader },
+      { path: "/girls/:unique_key", element: <CharacterDetailPage />, loader: characterDetailLoader },
+      { path: "/events", element: <EventsPage />, loader: eventsLoader },
+      { path: "/events/:unique_key", element: <EventDetailPage />, loader: eventDetailLoader },
+      { path: "/festivals", element: <FestivalsPage />, loader: festivalsLoader },
+      { path: "/festivals/:unique_key", element: <FestivalDetailPage />, loader: festivalDetailLoader },
+      { path: "/gachas", element: <GachasPage />, loader: gachasLoader },
+      { path: "/gachas/:unique_key", element: <GachaDetailPage />, loader: gachaDetailLoader },
+      { path: "/guides", element: <GuidesPage />, loader: guidesLoader },
+      { path: "/guides/:unique_key", element: <GuideDetailPage />, loader: guideDetailLoader },
+      { path: "/tools", element: <ToolsPage />, loader: toolsLoader },
+      { path: "/tools/:unique_key", element: <ToolDetailPage />, loader: toolDetailLoader },
+      { path: "/swimsuits", element: <SwimsuitsPage />, loader: swimsuitsLoader },
+      { path: "/swimsuits/:unique_key", element: <SwimsuitDetailPage />, loader: swimsuitDetailLoader },
+      { path: "/items", element: <ItemsPage />, loader: itemsLoader },
+      { path: "/items/:unique_key", element: <ItemDetailPage />, loader: itemDetailLoader },
+      { path: "/episodes", element: <EpisodesPage />, loader: episodesLoader },
+      { path: "/episodes/:unique_key", element: <EpisodeDetailPage />, loader: episodeDetailLoader },
+      { path: "/accessories", element: <AccessoriesPage />, loader: accessoriesLoader },
+      { path: "/accessories/:unique_key", element: <AccessoryDetailPage />, loader: accessoryDetailLoader },
+      { path: "/missions", element: <MissionsPage />, loader: missionsLoader },
+      { path: "/missions/:unique_key", element: <MissionDetailPage />, loader: missionDetailLoader },
+      { path: "/quizzes", element: <QuizzesPage />, loader: quizzesLoader },
+      { path: "/quizzes/:unique_key", element: <QuizDetailPage />, loader: quizDetailLoader },
+      { path: "/quizzes/:unique_key/take", element: <QuizTakingPage />, loader: quizDetailLoader },
+      { path: "/quizzes/:unique_key/result", element: <QuizResultPage /> },
+      { path: "/search", element: <SearchResultsPage /> },
+      { path: "*", element: <NotFoundPage /> },
+    ],
+  },
+], {
+  future: {
+    v7_relativeSplatPath: true,
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -61,59 +148,10 @@ const App = () => (
         <Toaster />
         <Sonner />
         <CustomContextMenu />
-      <BrowserRouter
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
-        <AppRoutes />
-      </BrowserRouter>
+        <RouterProvider router={router} />
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
-
-// Separate component to use hooks inside BrowserRouter
-const AppRoutes = () => {
-  useScrollToTop();
-  
-  return (
-    <Suspense fallback={<LoadingFallback />}>
-      <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/girls" element={<CharactersPage />} />
-            <Route path="/girls/:unique_key" element={<CharacterDetailPage />} />
-            <Route path="/events" element={<EventsPage />} />
-            <Route path="/events/:unique_key" element={<EventDetailPage />} />
-            <Route path="/festivals" element={<FestivalsPage />} />
-            <Route path="/festivals/:unique_key" element={<FestivalDetailPage />} />
-            <Route path="/gachas" element={<GachasPage />} />
-            <Route path="/gachas/:unique_key" element={<GachaDetailPage />} />
-            <Route path="/guides" element={<GuidesPage />} />
-            <Route path="/guides/:unique_key" element={<GuideDetailPage />} />
-            <Route path="/tools" element={<ToolsPage />} />
-            <Route path="/tools/:unique_key" element={<ToolDetailPage />} />
-            <Route path="/swimsuits" element={<SwimsuitsPage />} />
-            <Route path="/swimsuits/:unique_key" element={<SwimsuitDetailPage />} />
-            <Route path="/items" element={<ItemsPage />} />
-            <Route path="/items/:unique_key" element={<ItemDetailPage />} />
-            <Route path="/episodes" element={<EpisodesPage />} />
-            <Route path="/episodes/:unique_key" element={<EpisodeDetailPage />} />
-            <Route path="/accessories" element={<AccessoriesPage />} />
-            <Route path="/accessories/:unique_key" element={<AccessoryDetailPage />} />
-            <Route path="/missions" element={<MissionsPage />} />
-            <Route path="/missions/:unique_key" element={<MissionDetailPage />} />
-            <Route path="/quizzes" element={<QuizzesPage />} />
-            <Route path="/quizzes/:unique_key" element={<QuizDetailPage />} />
-            <Route path="/quizzes/:unique_key/take" element={<QuizTakingPage />} />
-            <Route path="/quizzes/:unique_key/result" element={<QuizResultPage />} />
-            <Route path="/search" element={<SearchResultsPage />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-    </Suspense>
-  );
-};
 
 export default App;

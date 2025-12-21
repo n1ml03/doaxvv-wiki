@@ -46,11 +46,42 @@ export default defineConfig({
     cssCodeSplit: true,
     
     // Configure chunk size warnings
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 500,
     
-    // Rollup options - let Vite handle chunking automatically
+    // Rollup options with manual chunking for better code splitting
     rollupOptions: {
       output: {
+        // Manual chunk splitting for large dependencies
+        manualChunks: {
+          // React core - loaded first
+          'react-vendor': ['react', 'react-dom'],
+          // Router - needed for navigation
+          'router': ['react-router-dom'],
+          // UI framework - Radix components
+          'ui-radix': [
+            '@radix-ui/react-accordion',
+            '@radix-ui/react-alert-dialog',
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-tooltip',
+          ],
+          // Charts - only loaded when needed
+          'charts': ['recharts'],
+          // PDF viewer - only loaded on guide pages with PDFs
+          'pdf': ['react-pdf'],
+          // Animation library
+          'animation': ['framer-motion'],
+          // Search library
+          'search': ['flexsearch'],
+          // Data processing
+          'data': ['papaparse', 'date-fns'],
+          // Markdown rendering
+          'markdown': ['react-markdown', 'rehype-raw', 'rehype-katex', 'remark-gfm', 'remark-math'],
+        },
+        
         // Asset file naming for better caching
         assetFileNames: (assetInfo) => {
           const fileName = assetInfo.names?.[0] || assetInfo.name || '';

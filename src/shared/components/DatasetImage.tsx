@@ -39,6 +39,8 @@ export interface DatasetImageProps extends Omit<ImgHTMLAttributes<HTMLImageEleme
   loadingComponent?: React.ReactNode;
   /** Custom error component */
   errorComponent?: React.ReactNode;
+  /** Native loading attribute - defaults to 'lazy' for performance */
+  loading?: 'lazy' | 'eager';
 }
 
 export function DatasetImage({
@@ -52,6 +54,7 @@ export function DatasetImage({
   className = '',
   onError,
   onLoad,
+  loading = 'lazy', // Default to lazy loading for performance
   ...props
 }: DatasetImageProps) {
   const { src: resolvedSrc, isLoading, hasError } = useImage(src, {
@@ -110,6 +113,7 @@ export function DatasetImage({
       src={resolvedSrc}
       alt={alt}
       className={className}
+      loading={loading}
       onError={handleError}
       onLoad={handleLoad}
       {...props}

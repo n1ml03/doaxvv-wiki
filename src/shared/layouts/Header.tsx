@@ -64,10 +64,12 @@ const Header = () => {
       return;
     }
     setIsLoading(true);
-    const searchResults = searchService.search(debouncedQuery);
-    setResults(searchResults);
-    setIsLoading(false);
-    setFocusedIndex(-1);
+    // Use async search to ensure content is loaded
+    searchService.searchAsync(debouncedQuery).then(searchResults => {
+      setResults(searchResults);
+      setIsLoading(false);
+      setFocusedIndex(-1);
+    });
   }, [debouncedQuery]);
 
   useEffect(() => {

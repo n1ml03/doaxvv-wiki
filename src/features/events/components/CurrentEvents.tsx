@@ -20,12 +20,16 @@ const CurrentEvents = () => {
   const rafRef = useRef<number>();
 
   useEffect(() => {
-    async function loadContent() {
-      await contentLoader.initialize();
-      const allEvents = contentLoader.getEvents();
-      setEvents(allEvents.filter(e => e.event_status === "Active").slice(0, 10));
+    // Try to use cached data first, then load if needed
+    const cachedEvents = contentLoader.getEvents();
+    if (cachedEvents.length > 0) {
+      setEvents(cachedEvents.filter(e => e.event_status === "Active").slice(0, 10));
+    } else {
+      // Load events if not cached
+      contentLoader.loadEvents().then(allEvents => {
+        setEvents(allEvents.filter(e => e.event_status === "Active").slice(0, 10));
+      });
     }
-    loadContent();
   }, []);
 
   // Memoize looped events to prevent recreation on every render

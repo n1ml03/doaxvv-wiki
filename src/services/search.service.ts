@@ -3,6 +3,8 @@
  * Provides centralized search functionality across all content types
  * Implements case-insensitive matching with language support
  * Supports advanced search syntax: id:123, pow>500, tec:300-400, key:unique-key, date:2024-01
+ * 
+ * Performance optimized: Only loads content when search is actually performed
  */
 
 import { contentLoader } from '@/content/loader';
@@ -344,6 +346,8 @@ function matchesLocalizedQuery(
 
 export class SearchService {
   private static instance: SearchService;
+  private initialized = false;
+  private initPromise: Promise<void> | null = null;
 
   private constructor() {}
 
@@ -354,11 +358,44 @@ export class SearchService {
     return SearchService.instance;
   }
 
+  /**
+   * Lazily initialize content for search - only loads when first search is performed
+   */
+  private async ensureInitialized(): Promise<void> {
+    if (this.initialized) return;
+    
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+
+    this.initPromise = Promise.all([
+      contentLoader.loadCharacters(),
+      contentLoader.loadSwimsuits(),
+      contentLoader.loadEvents(),
+      contentLoader.loadGachas(),
+      contentLoader.loadGuides(),
+      contentLoader.loadItems(),
+      contentLoader.loadEpisodes(),
+    ]).then(() => {
+      this.initialized = true;
+    });
+
+    return this.initPromise;
+  }
 
   /**
-   * Search across all content types
+   * Async search - ensures content is loaded before searching
+   */
+  async searchAsync(query: string, options: SearchOptions = {}): Promise<SearchResults | AdvancedSearchResults> {
+    await this.ensureInitialized();
+    return this.search(query, options);
+  }
+
+  /**
+   * Search across all content types (sync - uses cached data)
    * Returns results grouped by type with configurable limits
    * Supports advanced search syntax when enableAdvancedSearch is true
+   * Note: For first search, use searchAsync() to ensure data is loaded
    */
   search(query: string, options: SearchOptions = {}): SearchResults | AdvancedSearchResults {
     const { 

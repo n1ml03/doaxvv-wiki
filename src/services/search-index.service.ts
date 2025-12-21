@@ -102,7 +102,7 @@ export class SearchIndexService {
 
   /**
    * Build all search indexes
-   * Should be called after contentLoader.initialize()
+   * Lazily loads content if not already loaded
    */
   async buildIndexes(): Promise<void> {
     if (this.indexBuilt) return;
@@ -118,7 +118,16 @@ export class SearchIndexService {
   }
 
   private async _buildIndexesInternal(): Promise<void> {
-    const startTime = performance.now();
+    // Load all content types needed for search indexes
+    await Promise.all([
+      contentLoader.loadCharacters(),
+      contentLoader.loadSwimsuits(),
+      contentLoader.loadEvents(),
+      contentLoader.loadGachas(),
+      contentLoader.loadGuides(),
+      contentLoader.loadItems(),
+      contentLoader.loadEpisodes(),
+    ]);
     
     // Build all indexes in parallel
     await Promise.all([

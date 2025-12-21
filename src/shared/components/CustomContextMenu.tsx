@@ -79,7 +79,11 @@ export const CustomContextMenu = () => {
     ] : []),
     { id: "copyLink", label: "Copy Link", icon: <Link2 size={14} />, shortcut: "⌘L", action: () => navigator.clipboard.writeText(window.location.href) },
     { id: "share", label: "Share", icon: <Share2 size={14} />, action: async () => {
-      navigator.share ? await navigator.share({ title: document.title, url: window.location.href }) : navigator.clipboard.writeText(window.location.href);
+      if (navigator.share) {
+        await navigator.share({ title: document.title, url: window.location.href });
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+      }
     }},
     { id: "newTab", label: "Open in New Tab", icon: <ExternalLink size={14} />, divider: true, action: () => window.open(window.location.href, "_blank") },
     { id: "fullscreen", label: "Fullscreen", icon: <Fullscreen size={14} />, shortcut: "F11", action: () => {
@@ -96,15 +100,15 @@ export const CustomContextMenu = () => {
         
         if (isFullscreen) {
           if (document.exitFullscreen) {
-            document.exitFullscreen();
+            void document.exitFullscreen();
           } else if (doc.webkitExitFullscreen) {
-            doc.webkitExitFullscreen();
+            void doc.webkitExitFullscreen();
           }
         } else {
           if (docEl.requestFullscreen) {
-            docEl.requestFullscreen();
+            void docEl.requestFullscreen();
           } else if (docEl.webkitRequestFullscreen) {
-            docEl.webkitRequestFullscreen();
+            void docEl.webkitRequestFullscreen();
           }
         }
       } catch (error) {

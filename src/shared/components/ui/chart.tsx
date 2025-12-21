@@ -34,9 +34,19 @@ interface ChartContainerProps extends React.ComponentProps<"div"> {
   ref?: React.Ref<HTMLDivElement>;
   config: ChartConfig;
   children: React.ComponentProps<typeof RechartsPrimitive.ResponsiveContainer>["children"];
+  /** Use built-in responsive mode from Recharts 3.x for better performance */
+  useBuiltInResponsive?: boolean;
 }
 
-function ChartContainer({ id, className, children, config, ref, ...props }: ChartContainerProps) {
+function ChartContainer({ 
+  id, 
+  className, 
+  children, 
+  config, 
+  ref, 
+  useBuiltInResponsive = false,
+  ...props 
+}: ChartContainerProps) {
   const uniqueId = React.useId();
   const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`;
 
@@ -46,20 +56,39 @@ function ChartContainer({ id, className, children, config, ref, ...props }: Char
         data-chart={chartId}
         ref={ref}
         className={cn(
-          "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none",
+          "flex aspect-video justify-center text-xs",
+          // Recharts 3.x styling selectors
+          "[&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground",
+          "[&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50",
+          "[&_.recharts-curve.recharts-tooltip-cursor]:stroke-border",
+          "[&_.recharts-dot[stroke='#fff']]:stroke-transparent",
+          "[&_.recharts-layer]:outline-none",
+          "[&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border",
+          "[&_.recharts-radial-bar-background-sector]:fill-muted",
+          "[&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted",
+          "[&_.recharts-reference-line_[stroke='#ccc']]:stroke-border",
+          "[&_.recharts-sector[stroke='#fff']]:stroke-transparent",
+          "[&_.recharts-sector]:outline-none",
+          "[&_.recharts-surface]:outline-none",
           className,
         )}
         {...props}
       >
         <ChartStyle id={chartId} config={config} />
-        <RechartsPrimitive.ResponsiveContainer>{children}</RechartsPrimitive.ResponsiveContainer>
+        {useBuiltInResponsive ? (
+          // Recharts 3.x: Use built-in responsive prop for better performance
+          children
+        ) : (
+          // Legacy: Use ResponsiveContainer wrapper
+          <RechartsPrimitive.ResponsiveContainer>{children}</RechartsPrimitive.ResponsiveContainer>
+        )}
       </div>
     </ChartContext.Provider>
   );
 }
 
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
-  const colorConfig = Object.entries(config).filter(([_, config]) => config.theme || config.color);
+  const colorConfig = Object.entries(config).filter(([, itemConfig]) => itemConfig.theme || itemConfig.color);
 
   if (!colorConfig.length) {
     return null;
@@ -77,6 +106,7 @@ ${colorConfig
     const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
     return color ? `  --color-${key}: ${color};` : null;
   })
+  .filter(Boolean)
   .join("\n")}
 }
 `,
@@ -89,10 +119,31 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
-interface ChartTooltipContentProps
-  extends React.ComponentProps<typeof RechartsPrimitive.Tooltip>,
-    React.ComponentProps<"div"> {
+// Recharts 3.x payload types
+type TooltipPayloadItem = {
+  dataKey?: string | number;
+  name?: string;
+  value?: number | string;
+  color?: string;
+  payload?: Record<string, unknown>;
+  fill?: string;
+};
+
+interface ChartTooltipContentProps extends React.ComponentProps<"div"> {
   ref?: React.Ref<HTMLDivElement>;
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string;
+  labelFormatter?: (label: unknown, payload: TooltipPayloadItem[]) => React.ReactNode;
+  labelClassName?: string;
+  formatter?: (
+    value: unknown,
+    name: string,
+    item: TooltipPayloadItem,
+    index: number,
+    payload: Record<string, unknown>
+  ) => React.ReactNode;
+  color?: string;
   hideLabel?: boolean;
   hideIndicator?: boolean;
   indicator?: "line" | "dot" | "dashed";
@@ -161,18 +212,18 @@ function ChartTooltipContent({
         {payload.map((item, index) => {
           const key = `${nameKey || item.name || item.dataKey || "value"}`;
           const itemConfig = getPayloadConfigFromPayload(config, item, key);
-          const indicatorColor = color || item.payload.fill || item.color;
+          const indicatorColor = color || item.payload?.fill || item.color;
 
           return (
             <div
-              key={item.dataKey}
+              key={String(item.dataKey)}
               className={cn(
                 "flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-muted-foreground",
                 indicator === "dot" && "items-center",
               )}
             >
               {formatter && item?.value !== undefined && item.name ? (
-                formatter(item.value, item.name, item, index, item.payload)
+                formatter(item.value, item.name, item, index, item.payload || {})
               ) : (
                 <>
                   {itemConfig?.icon ? (
@@ -207,7 +258,7 @@ function ChartTooltipContent({
                     </div>
                     {item.value && (
                       <span className="font-mono font-medium tabular-nums text-foreground">
-                        {item.value.toLocaleString()}
+                        {typeof item.value === 'number' ? item.value.toLocaleString() : item.value}
                       </span>
                     )}
                   </div>
@@ -223,10 +274,17 @@ function ChartTooltipContent({
 
 const ChartLegend = RechartsPrimitive.Legend;
 
-interface ChartLegendContentProps
-  extends React.ComponentProps<"div">,
-    Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> {
+// Recharts 3.x legend payload type
+type LegendPayloadItem = {
+  value?: string;
+  dataKey?: string | number;
+  color?: string;
+};
+
+interface ChartLegendContentProps extends React.ComponentProps<"div"> {
   ref?: React.Ref<HTMLDivElement>;
+  payload?: LegendPayloadItem[];
+  verticalAlign?: "top" | "bottom" | "middle";
   hideIcon?: boolean;
   nameKey?: string;
 }

@@ -30,11 +30,17 @@ const getPresetRange = (key: PresetType): DateRange => {
   const today = new Date();
   switch (key) {
     case "today": return { from: today, to: today };
-    case "yesterday": const y = subDays(today, 1); return { from: y, to: y };
+    case "yesterday": {
+      const y = subDays(today, 1);
+      return { from: y, to: y };
+    }
     case "last7days": return { from: subDays(today, 6), to: today };
     case "last30days": return { from: subDays(today, 29), to: today };
     case "thisMonth": return { from: startOfMonth(today), to: today };
-    case "lastMonth": const lm = subMonths(today, 1); return { from: startOfMonth(lm), to: endOfMonth(lm) };
+    case "lastMonth": {
+      const lm = subMonths(today, 1);
+      return { from: startOfMonth(lm), to: endOfMonth(lm) };
+    }
     case "last3months": return { from: subMonths(today, 3), to: today };
     case "thisYear": return { from: startOfYear(today), to: today };
   }
@@ -54,7 +60,9 @@ export function DateRangePicker({ value, onChange, onClear, className, disabled 
   const hasValue = value?.start || value?.end;
 
   const handleSelect = (range: DateRange | undefined) => {
-    onChange({ start: range?.from ? format(range.from, "yyyy-MM-dd") : "", end: range?.to ? format(range.to, "yyyy-MM-dd") : "" });
+    const start = range?.from ? format(range.from, "yyyy-MM-dd") : "";
+    const end = range?.to ? format(range.to, "yyyy-MM-dd") : "";
+    onChange({ start, end });
   };
 
   const handlePreset = (key: PresetType) => {
@@ -66,7 +74,11 @@ export function DateRangePicker({ value, onChange, onClear, className, disabled 
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onClear ? onClear() : onChange({ start: "", end: "" });
+    if (onClear) {
+      onClear();
+    } else {
+      onChange({ start: "", end: "" });
+    }
   };
 
   const displayText = hasValue

@@ -18,11 +18,15 @@ const PopularGuides = () => {
   const rafRef = useRef<number>();
 
   useEffect(() => {
-    async function loadContent() {
-      await contentLoader.initialize();
-      setAllGuides(contentLoader.getGuides().slice(0, 10));
+    // Try to use cached data first, then load if needed
+    const cachedGuides = contentLoader.getGuides();
+    if (cachedGuides.length > 0) {
+      setAllGuides(cachedGuides.slice(0, 10));
+    } else {
+      contentLoader.loadGuides().then(guides => {
+        setAllGuides(guides.slice(0, 10));
+      });
     }
-    loadContent();
   }, []);
 
   // Memoize looped guides to prevent recreation on every render

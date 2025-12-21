@@ -11,11 +11,15 @@ const FeaturedCharacters = () => {
   const [featuredGirls, setFeaturedGirls] = useState<Character[]>([]);
 
   useEffect(() => {
-    async function loadContent() {
-      await contentLoader.initialize();
-      setFeaturedGirls(contentLoader.getCharacters().slice(0, 3));
+    // Try to use cached data first, then load if needed
+    const cachedCharacters = contentLoader.getCharacters();
+    if (cachedCharacters.length > 0) {
+      setFeaturedGirls(cachedCharacters.slice(0, 3));
+    } else {
+      contentLoader.loadCharacters().then(characters => {
+        setFeaturedGirls(characters.slice(0, 3));
+      });
     }
-    loadContent();
   }, []);
 
   return (

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLoaderData } from "react-router-dom";
 import Header from "@/shared/layouts/Header";
 import Footer from "@/shared/layouts/Footer";
 import { Hero, WhatsNew, SiteOverview, VersionUpdates } from "../components";
@@ -25,6 +25,9 @@ const STATS_CONFIG = [
 const HomePage = () => {
   const { t } = useTranslation();
   
+  // Data is already prefetched by homeLoader, use cached data
+  useLoaderData();
+  
   // Set dynamic page title - use default for home page (Requirements: 9.1, 9.5)
   useDocumentTitle('');
   
@@ -36,22 +39,26 @@ const HomePage = () => {
   });
 
   useEffect(() => {
-    async function loadStats() {
-      await contentLoader.initialize();
-      const characters = contentLoader.getCharacters();
-      const swimsuits = contentLoader.getSwimsuits();
-      const events = contentLoader.getEvents();
-      const guides = contentLoader.getGuides();
-      const activeEvents = events.filter(e => e.event_status === "Active");
+    // Use already cached data from loader - no need to call initialize()
+    const characters = contentLoader.getCharacters();
+    const events = contentLoader.getEvents();
+    const guides = contentLoader.getGuides();
+    const activeEvents = events.filter(e => e.event_status === "Active");
 
-      setStatsValues({
-        characters: characters.length.toString(),
+    // Load swimsuits count lazily (not critical for initial render)
+    contentLoader.loadSwimsuits().then(swimsuits => {
+      setStatsValues(prev => ({
+        ...prev,
         swimsuits: swimsuits.length.toString(),
-        activeEvents: activeEvents.length.toString(),
-        guides: guides.length.toString(),
-      });
-    }
-    loadStats();
+      }));
+    });
+
+    setStatsValues({
+      characters: characters.length.toString(),
+      swimsuits: "...", // Will be updated when loaded
+      activeEvents: activeEvents.length.toString(),
+      guides: guides.length.toString(),
+    });
   }, []);
 
   return (
