@@ -195,7 +195,7 @@ const EpisodeDetailPage = () => {
                                 <DatasetImage
                                   src={character.image}
                                   alt={character.title}
-                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                 />
                               </div>
                               <p className="font-medium text-sm group-hover:text-primary transition-colors">
@@ -277,12 +277,12 @@ const EpisodeDetailPage = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {otherEpisodes.map((otherEpisode) => (
                     <Link key={otherEpisode.id} to={`/episodes/${otherEpisode.unique_key}`}>
-                      <Card className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1">
+                      <Card className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-200 hover:-translate-y-0.5">
                         <div className="relative aspect-video overflow-hidden">
                           <DatasetImage
                             src={otherEpisode.image}
                             alt={otherEpisode.title}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                           <Badge className={`absolute top-2 right-2 ${getStatusColor(otherEpisode.episode_status)}`}>
                             {t(`status.${otherEpisode.episode_status.toLowerCase().replace(" ", "")}`)}

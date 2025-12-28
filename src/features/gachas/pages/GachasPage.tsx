@@ -164,8 +164,7 @@ const GachasPage = () => {
               return (
                 <Link to={`/gachas/${gacha.unique_key}`}>
                   <Card
-                    className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 animate-fade-in"
-                    style={{ animationDelay: `${Math.min(index, 8) * 0.03}s` }}
+                    className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-200 hover:-translate-y-0.5"
                   >
                   <div className="relative aspect-[16/9] overflow-hidden bg-black/5">
                     <DatasetImage

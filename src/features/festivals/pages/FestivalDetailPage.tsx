@@ -320,12 +320,12 @@ const FestivalDetailPage = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {relatedFestivals.map((relatedFestival) => (
                     <Link key={relatedFestival.id} to={`/festivals/${relatedFestival.unique_key}`}>
-                      <Card className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1">
+                      <Card className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-200 hover:-translate-y-0.5">
                         <div className="relative aspect-video overflow-hidden">
                           <DatasetImage
                             src={relatedFestival.image}
                             alt={getLocalizedValue(relatedFestival.name, currentLanguage)}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                           <Badge className={`absolute top-2 right-2 ${getStatusColor(relatedFestival.event_status)}`}>
                             {t(`status.${relatedFestival.event_status.toLowerCase().replace(" ", "")}`)}

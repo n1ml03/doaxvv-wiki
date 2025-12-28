@@ -575,12 +575,12 @@ const CharacterDetailPage = () => {
                     };
                     return (
                       <Link key={suit.id} to={`/swimsuits/${suit.unique_key}`}>
-                        <Card className="border-border/50 bg-card shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group cursor-pointer overflow-hidden">
+                        <Card className="border-border/50 bg-card shadow-card hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 group cursor-pointer overflow-hidden">
                           <div className="relative aspect-square overflow-hidden">
                             <DatasetImage 
                               src={suit.image} 
                               alt={suit.title} 
-                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" 
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
                             />
                             <Badge className={`absolute top-2 right-2 text-xs ${getRarityColor(suit.rarity)}`}>
                               {suit.rarity}
@@ -744,7 +744,7 @@ const CharacterDetailPage = () => {
             title: guide.title,
             image: guide.image,
             href: `/guides/${guide.unique_key}`,
-            badge: guide.difficulty,
+            badge: guide.category,
             description: guide.summary,
             }))}
             viewAllHref="/guides"

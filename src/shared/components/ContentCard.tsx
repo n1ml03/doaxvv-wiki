@@ -19,7 +19,6 @@ interface ContentCardProps {
   className?: string;
 }
 
-/** Reusable image component with loading skeleton and error fallback */
 const CardImage = ({ 
   src, 
   alt, 
@@ -64,7 +63,7 @@ const CardImage = ({
         onLoad={handleLoad}
         onError={handleError}
         className={cn(
-          "w-full h-full object-cover transition-all duration-500 group-hover:scale-110",
+          "w-full h-full object-cover transition-transform duration-300 group-hover:scale-105",
           loaded ? "opacity-100" : "opacity-0"
         )}
       />
@@ -87,7 +86,7 @@ const ContentCard = ({
   if (variant === "horizontal") {
     return (
       <Link to={href}>
-        <Card className={`group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 ${className}`}>
+        <Card className={cn("group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-200 hover:-translate-y-0.5", className)}>
           <div className="flex flex-col sm:flex-row">
             <div className="relative w-full sm:w-48 h-48 sm:h-auto flex-shrink-0">
               <CardImage 
@@ -153,14 +152,14 @@ const ContentCard = ({
   if (variant === "featured") {
     return (
       <Link to={href}>
-        <Card className={`group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 ${className}`}>
+        <Card className={cn("group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-200 hover:-translate-y-0.5", className)}>
           <div className="relative aspect-[16/9]">
             <CardImage 
               src={image} 
               alt={title} 
               aspectClass="aspect-[16/9]"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent pointer-events-none" />
             {badges.length > 0 && (
               <div className="absolute top-3 left-3 flex gap-2 z-10">
                 {badges.map((badge, i) => (
@@ -173,7 +172,7 @@ const ContentCard = ({
             <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
               <div className="flex items-center gap-3 mb-2">
                 {Icon && (
-                  <div className="p-2 rounded-lg bg-background/95 backdrop-blur">
+                  <div className="p-2 rounded-lg bg-background/90 backdrop-blur-sm">
                     <Icon className="h-5 w-5 text-primary" />
                   </div>
                 )}
@@ -217,18 +216,18 @@ const ContentCard = ({
   // Default variant
   return (
     <Link to={href}>
-      <Card className={`group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 h-full ${className}`}>
+      <Card className={cn("group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-200 hover:-translate-y-0.5 h-full", className)}>
         <div className="relative aspect-square">
           <CardImage 
             src={image} 
             alt={title} 
             aspectClass="aspect-square"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
           {badges.length > 0 && (
             <div className="absolute top-3 right-3 flex gap-2 z-10">
               {badges.map((badge, i) => (
-                <Badge key={i} variant={badge.variant || "default"} className="bg-accent text-accent-foreground">
+                <Badge key={i} variant={badge.variant || "default"} className="bg-background/90 backdrop-blur-sm text-foreground border border-border/50">
                   {badge.label}
                 </Badge>
               ))}

@@ -340,13 +340,13 @@ const QuizzesPage = () => {
                 </h2>
               </div>
               <Link to={`/quizzes/${featuredQuiz.quiz.unique_key}`}>
-                <Card className="group cursor-pointer border-border/50 bg-gradient-to-r from-primary/5 to-accent/5 shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+                <Card className="group cursor-pointer border-border/50 bg-gradient-to-r from-primary/5 to-accent/5 shadow-card hover:shadow-hover transition-all duration-200 hover:-translate-y-0.5 overflow-hidden">
                   <div className="flex flex-col sm:flex-row">
                     <div className="relative w-full sm:w-48 h-32 sm:h-auto overflow-hidden">
                       <DatasetImage
                         src={featuredQuiz.quiz.image}
                         alt={getLocalizedValue(featuredQuiz.quiz.name, currentLanguage)}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <div className="absolute top-2 left-2">
                         <Badge className={`${getDifficultyColor(featuredQuiz.quiz.difficulty)} shadow-sm`}>
@@ -553,16 +553,15 @@ const QuizzesPage = () => {
                   return (
                     <Link key={quiz.id} to={`/quizzes/${quiz.unique_key}`}>
                       <Card
-                        className={`group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 animate-fade-in h-full ${
+                        className={`group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-200 hover:-translate-y-0.5 h-full ${
                           status === 'perfect' ? 'ring-2 ring-yellow-500/30' : ''
                         }`}
-                        style={{ animationDelay: `${index * 0.05}s` }}
                       >
                         <div className="relative h-52 overflow-hidden">
                           <DatasetImage
                             src={quiz.image}
                             alt={quizName}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
 

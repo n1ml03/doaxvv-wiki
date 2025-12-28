@@ -207,16 +207,15 @@ const CharactersPage = () => {
             {paginatedCharacters.map((character, index) => (
               <Link key={character.id} to={`/girls/${character.unique_key}`}>
                 <Card
-                  className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-2 animate-fade-in h-full"
-                  style={{ animationDelay: `${Math.min(index, 8) * 0.03}s` }}
+                  className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-200 hover:-translate-y-0.5 h-full"
                 >
                   <div className="relative aspect-square overflow-hidden">
                     <DatasetImage
                       src={character.image}
                       alt={character.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                     <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
                       <div className="flex gap-1 sm:gap-2 text-white text-xs sm:text-sm">
                         <div className="flex-1 bg-background/20 backdrop-blur rounded px-1.5 sm:px-2 py-1">

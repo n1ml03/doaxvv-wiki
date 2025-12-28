@@ -23,7 +23,7 @@
  * ```
  */
 
-import { useState, useCallback, ImgHTMLAttributes } from 'react';
+import { useState, useCallback, useEffect, ImgHTMLAttributes } from 'react';
 import { useImage } from '@/content/hooks/useImageLoader';
 
 export interface DatasetImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> {
@@ -64,6 +64,11 @@ export function DatasetImage({
   });
 
   const [imgError, setImgError] = useState(false);
+
+  // Reset error state when src changes to allow new image to load
+  useEffect(() => {
+    setImgError(false);
+  }, [src]);
 
   const handleError = useCallback(
     (e: React.SyntheticEvent<HTMLImageElement>) => {

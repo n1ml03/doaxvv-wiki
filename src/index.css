@@ -43,6 +43,10 @@ All colors MUST be HSL.
     --secondary: 340 85% 65%;
     --secondary-foreground: 0 0% 100%;
 
+    /* Sunset Orange Accent */
+    --tertiary: 25 95% 55%;
+    --tertiary-foreground: 0 0% 100%;
+
     --muted: 210 20% 96%;
     --muted-foreground: 215 15% 45%;
 
@@ -58,33 +62,63 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    /* Enhanced Gradients */
+    /* Enhanced Premium Gradients */
     --gradient-ocean: linear-gradient(
       135deg,
       hsl(200 90% 48%),
       hsl(190 80% 45%)
     );
+    --gradient-sunset: linear-gradient(
+      135deg,
+      hsl(340 85% 65%),
+      hsl(25 95% 55%)
+    );
+    --gradient-ocean-sunset: linear-gradient(
+      135deg,
+      hsl(200 90% 55%) 0%,
+      hsl(190 80% 50%) 25%,
+      hsl(340 75% 60%) 75%,
+      hsl(25 90% 55%) 100%
+    );
     --gradient-hero: linear-gradient(
       to bottom,
-      hsl(200 90% 60% / 0.2),
-      hsl(340 85% 65% / 0.15)
+      hsl(200 90% 60% / 0.25),
+      hsl(340 85% 65% / 0.2)
+    );
+    --gradient-hero-overlay: linear-gradient(
+      180deg,
+      hsl(200 90% 20% / 0.3) 0%,
+      hsl(200 80% 15% / 0.4) 40%,
+      hsl(340 70% 20% / 0.5) 100%
     );
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 40% 99%));
+    --gradient-card-hover: linear-gradient(
+      145deg,
+      hsl(200 90% 98%),
+      hsl(340 85% 98%)
+    );
+    --gradient-glass: linear-gradient(
+      135deg,
+      hsl(0 0% 100% / 0.9),
+      hsl(0 0% 100% / 0.7)
+    );
 
-    /* Softer, more premium shadows */
+    /* Premium Shadows with color tints */
     --shadow-soft: 0 4px 20px -2px hsl(215 25% 15% / 0.08);
     --shadow-card: 0 10px 30px -5px hsl(215 25% 15% / 0.1);
     --shadow-hover: 0 20px 40px -5px hsl(215 25% 15% / 0.15);
+    --shadow-glow-primary: 0 0 40px -10px hsl(200 90% 48% / 0.4);
+    --shadow-glow-secondary: 0 0 40px -10px hsl(340 85% 65% / 0.4);
 
     /* Semantic Colors (Stats & Rarities) */
     --pow: 350 85% 60%; /* Soft Red */
-    --tec: 210 85% 60%; /* Electric Blue - Adjusted to match primary hue family but distinct */
+    --tec: 200 85% 55%; /* Ocean Blue */
     --stm: 150 70% 45%; /* Seafoam Green */
     --apl: 280 70% 60%; /* Lavender Purple */
 
-    --ssr: 45 95% 55%; /* Golden Amber */
-    --sr: 260 60% 70%; /* Soft Lilac */
-    --r: 200 60% 60%; /* Muted Blue */
+    --ssr: 200 60% 55%; /* Blue */
+    --sr: 45 95% 55%; /* Yellow/Golden */
+    --r: 0 0% 95%; /* White */
 
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -100,13 +134,13 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 215 30% 10%;
+    --background: 215 30% 8%;
     --foreground: 210 25% 95%;
 
-    --card: 215 25% 13%;
+    --card: 215 25% 12%;
     --card-foreground: 210 25% 95%;
 
-    --popover: 215 25% 13%;
+    --popover: 215 25% 12%;
     --popover-foreground: 210 25% 95%;
 
     /* Lighter Ocean Blue for Dark Mode */
@@ -117,48 +151,82 @@ All colors MUST be HSL.
     --secondary: 340 75% 65%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 215 25% 20%;
+    /* Sunset Orange Accent */
+    --tertiary: 25 90% 60%;
+    --tertiary-foreground: 0 0% 100%;
+
+    --muted: 215 25% 18%;
     --muted-foreground: 215 15% 70%;
 
-    --accent: 215 25% 22%; /* Subtle dark gray for hover states */
+    --accent: 215 25% 20%; /* Subtle dark gray for hover states */
     --accent-foreground: 210 25% 95%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 25% 22%;
-    --input: 215 25% 22%;
+    --border: 215 25% 20%;
+    --input: 215 25% 20%;
     --ring: 200 80% 60%;
 
     /* Semantic Colors (Dark Mode) */
     --pow: 350 85% 65%;
-    --tec: 210 85% 65%;
+    --tec: 200 85% 60%;
     --stm: 150 70% 55%;
     --apl: 280 70% 65%;
 
-    --ssr: 45 95% 60%;
-    --sr: 260 60% 75%;
-    --r: 200 60% 65%;
+    --ssr: 200 60% 60%; /* Blue */
+    --sr: 45 95% 60%; /* Yellow/Golden */
+    --r: 0 0% 85%; /* White (slightly darker for dark mode) */
 
     --gradient-ocean: linear-gradient(
       135deg,
       hsl(200 80% 50%),
       hsl(190 70% 40%)
     );
+    --gradient-sunset: linear-gradient(
+      135deg,
+      hsl(340 75% 55%),
+      hsl(25 85% 50%)
+    );
+    --gradient-ocean-sunset: linear-gradient(
+      135deg,
+      hsl(200 80% 45%) 0%,
+      hsl(190 70% 40%) 25%,
+      hsl(340 65% 50%) 75%,
+      hsl(25 80% 45%) 100%
+    );
     --gradient-hero: linear-gradient(
       to bottom,
-      hsl(200 80% 30% / 0.3),
-      hsl(340 75% 25% / 0.2)
+      hsl(200 80% 30% / 0.35),
+      hsl(340 75% 25% / 0.25)
+    );
+    --gradient-hero-overlay: linear-gradient(
+      180deg,
+      hsl(200 80% 10% / 0.5) 0%,
+      hsl(200 70% 8% / 0.6) 40%,
+      hsl(340 60% 12% / 0.7) 100%
     );
     --gradient-card: linear-gradient(
       145deg,
-      hsl(215 25% 13%),
-      hsl(215 30% 11%)
+      hsl(215 25% 12%),
+      hsl(215 30% 10%)
+    );
+    --gradient-card-hover: linear-gradient(
+      145deg,
+      hsl(200 40% 15%),
+      hsl(340 30% 12%)
+    );
+    --gradient-glass: linear-gradient(
+      135deg,
+      hsl(215 25% 15% / 0.9),
+      hsl(215 25% 12% / 0.7)
     );
 
     --shadow-soft: 0 4px 20px -2px hsl(0 0% 0% / 0.3);
     --shadow-card: 0 10px 30px -5px hsl(0 0% 0% / 0.4);
     --shadow-hover: 0 20px 40px -5px hsl(0 0% 0% / 0.5);
+    --shadow-glow-primary: 0 0 40px -10px hsl(200 80% 60% / 0.3);
+    --shadow-glow-secondary: 0 0 40px -10px hsl(340 75% 65% / 0.3);
   }
 }
 
@@ -172,45 +240,77 @@ All colors MUST be HSL.
   }
 
   /* 
-   * Hide scrollbars while maintaining scroll functionality
-   * Requirements: 10.1, 10.2, 10.3, 10.4, 10.5
+   * Custom Scrollbar Styling - Ocean & Sunset Theme
+   * Harmonized with the website's design language
    */
 
-  /* Hide scrollbar for Chrome, Safari and Opera */
-  html::-webkit-scrollbar,
-  body::-webkit-scrollbar {
-    display: none;
-    width: 0;
-    height: 0;
-  }
-
-  /* Hide scrollbar for IE, Edge and Firefox */
+  /* Firefox scrollbar styling */
   html,
   body {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.4) hsl(var(--muted));
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.4) transparent;
+  }
+
+  /* Webkit (Chrome, Safari, Edge) scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted) / 0.5);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--primary) / 0.5),
+      hsl(var(--secondary) / 0.4)
+    );
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--primary) / 0.7),
+      hsl(var(--secondary) / 0.6)
+    );
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--primary) / 0.85),
+      hsl(var(--secondary) / 0.75)
+    );
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
   }
 
   /* Utility class for hiding scrollbars on specific containers */
   .hide-scrollbar::-webkit-scrollbar,
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
-  }
-
-  .hide-scrollbar,
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  /* Global scrollbar hiding for ALL elements */
-  *::-webkit-scrollbar {
-    display: none;
     width: 0;
     height: 0;
   }
 
-  * {
+  .hide-scrollbar,
+  .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
@@ -508,5 +608,65 @@ All colors MUST be HSL.
 
   .quiz-bookmark-active {
     animation: bookmark-pulse 0.3s ease-out;
+  }
+
+  /* Premium Ocean & Sunset Theme - Optimized Components */
+  
+  /* Simple fade animation - GPU accelerated */
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.3s ease-out;
+  }
+
+  /* Premium glassmorphism card - simplified */
+  .glass-card {
+    @apply bg-card/90 backdrop-blur-sm border border-border/50;
+  }
+
+  /* Ocean gradient text */
+  .text-gradient-ocean {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-ocean);
+  }
+
+  .text-gradient-sunset {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-sunset);
+  }
+
+  /* Premium section divider */
+  .section-divider {
+    @apply relative h-px w-full my-8;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--primary) / 0.3) 20%,
+      hsl(var(--secondary) / 0.3) 80%,
+      transparent 100%
+    );
+  }
+
+  /* Premium section header */
+  .section-header {
+    @apply flex items-center gap-3 mb-6;
+  }
+
+  .section-header-icon {
+    @apply p-2.5 rounded-xl;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--secondary) / 0.1));
+  }
+
+  .section-header-title {
+    @apply text-xl sm:text-2xl font-bold text-foreground;
   }
 }

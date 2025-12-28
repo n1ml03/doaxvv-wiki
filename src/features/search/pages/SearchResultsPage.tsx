@@ -69,8 +69,7 @@ function SearchResultCard({ result, index }: { result: IndexedSearchResult; inde
   return (
     <Link to={result.url}>
       <Card
-        className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-        style={{ animationDelay: `${Math.min(index, 10) * 0.02}s` }}
+        className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
       >
         <div className="flex items-center gap-4 p-4">
           <div className="relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-muted ring-2 ring-transparent transition-all">
@@ -78,7 +77,7 @@ function SearchResultCard({ result, index }: { result: IndexedSearchResult; inde
               <img
                 src={result.image}
                 alt={result.title}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 loading="lazy"
               />
             ) : (

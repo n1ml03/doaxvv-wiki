@@ -1,7 +1,7 @@
-import { Search } from "lucide-react";
+import { Search, Command } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useState, useRef, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { LanguageSwitcher } from "@/shared/components/LanguageSwitcher";
 import { ThemeToggle } from "@/shared/components/ThemeToggle";
 import { DesktopNavigation, MobileNavigation } from "@/shared/layouts/navigation";
@@ -22,23 +22,26 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
+const emptyResults: SearchResults = {
+  characters: [], swimsuits: [], events: [], gachas: [], guides: [], items: [], episodes: [], tools: [], accessories: [], missions: [], quizzes: [], total: 0,
+};
+
 const Header = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
-  const [results, setResults] = useState<SearchResults>({
-    characters: [], swimsuits: [], events: [], gachas: [], guides: [], items: [], episodes: [], tools: [], accessories: [], missions: [], quizzes: [], total: 0,
-  });
+  const [results, setResults] = useState<SearchResults>(emptyResults);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debouncedQuery = useDebounce(query, 300);
-  const flattenedResults = getFlattenedResults(results);
+  const flattenedResults = useMemo(() => getFlattenedResults(results), [results]);
 
   const isHomePage = location.pathname === "/";
   const isSearchPage = location.pathname === "/search";
@@ -47,24 +50,23 @@ const Header = () => {
   // Recent searches management (Requirements: 6.1, 6.2, 6.3, 6.4)
   const { searches: recentSearches, addSearch, removeSearch, clearSearches } = useRecentSearches();
 
-  // Translate navigation groups
-  const translatedGroups = navigationGroups.map(group => ({
+  // Translate navigation groups - memoized for performance
+  const translatedGroups = useMemo(() => navigationGroups.map(group => ({
     ...group,
     label: t(`nav.${group.label.toLowerCase()}`),
     items: group.items.map(item => ({
       ...item,
       label: t(`nav.${item.label.toLowerCase()}`),
     }))
-  }));
+  })), [t]);
 
   useEffect(() => {
     if (!debouncedQuery.trim()) {
-      setResults({ characters: [], swimsuits: [], events: [], gachas: [], guides: [], items: [], episodes: [], tools: [], accessories: [], missions: [], quizzes: [], total: 0 });
+      setResults(emptyResults);
       setIsLoading(false);
       return;
     }
     setIsLoading(true);
-    // Use async search to ensure content is loaded
     searchService.searchAsync(debouncedQuery).then(searchResults => {
       setResults(searchResults);
       setIsLoading(false);
@@ -107,27 +109,26 @@ const Header = () => {
     },
   ]);
 
-  const handleSelect = (result: SearchResult) => {
+  const handleSelect = useCallback((result: SearchResult) => {
     setSearchOpen(false);
     setQuery('');
     navigate(result.url);
-  };
+  }, [navigate]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (query.trim()) {
-      addSearch(query.trim()); // Add to recent searches (Requirement 6.1)
+      addSearch(query.trim());
       setSearchOpen(false);
       navigate(`/search?q=${encodeURIComponent(query.trim())}`);
     }
-  };
+  }, [query, addSearch, navigate]);
 
-  // Handle recent search selection
-  const handleRecentSearchSelect = (search: string) => {
+  const handleRecentSearchSelect = useCallback((search: string) => {
     setQuery(search);
     addSearch(search);
     setSearchOpen(false);
     navigate(`/search?q=${encodeURIComponent(search)}`);
-  };
+  }, [addSearch, navigate]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!searchOpen) {
@@ -173,49 +174,111 @@ const Header = () => {
       </a>
       <header 
         role="banner"
-        className="sticky top-0 z-50 w-full border-b border-border/40 bg-gradient-to-r from-background/95 via-background/90 to-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/60"
+        className={cn(
+          "sticky top-0 z-50 w-full",
+          "border-b border-border/30",
+          "bg-background/90 backdrop-blur-xl backdrop-saturate-150",
+          "supports-[backdrop-filter]:bg-background/85",
+          "transition-all duration-300"
+        )}
       >
+        {/* Subtle gradient accent line at top */}
+        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+        
         <div className="container flex h-16 items-center justify-between px-4 md:px-8">
+          {/* Logo with enhanced styling */}
           <a 
             href="/" 
             onClick={(e) => {
               e.preventDefault();
               window.location.href = '/';
             }}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-md"
+            className={cn(
+              "group flex items-center gap-2.5",
+              "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 rounded-xl",
+              "transition-all duration-200"
+            )}
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 shadow-md">
-              <img src="/favicon.ico" alt="Logo" className="h-6 w-6" />
+            <div className={cn(
+              "relative flex h-9 w-9 items-center justify-center rounded-xl",
+              "bg-gradient-to-br from-primary via-primary to-secondary/80",
+              "shadow-md shadow-primary/20",
+              "group-hover:shadow-lg group-hover:shadow-primary/30",
+              "group-hover:scale-105 transition-all duration-200"
+            )}>
+              <img src="/favicon.ico" alt="Logo" className="h-6 w-6 drop-shadow-sm" />
+              {/* Subtle shine effect */}
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-white/20 to-transparent" />
             </div>
-            <span className="text-xl font-bold text-foreground hidden sm:inline">{t('app.title')}</span>
-            <span className="text-xl font-bold text-foreground sm:hidden">{t('app.titleShort')}</span>
+            <span className={cn(
+              "text-xl font-bold hidden sm:inline",
+              "bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text",
+              "group-hover:from-primary group-hover:to-secondary",
+              "transition-all duration-200"
+            )}>
+              {t('app.title')}
+            </span>
+            <span className={cn(
+              "text-xl font-bold sm:hidden",
+              "bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text"
+            )}>
+              {t('app.titleShort')}
+            </span>
           </a>
 
           <DesktopNavigation groups={translatedGroups} />
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {showSearch && (
               <div ref={containerRef} className="relative">
+                {/* Desktop Search - Premium Style */}
                 <div className="hidden lg:flex relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={query}
-                    onChange={(e) => {
-                      setQuery(e.target.value);
-                      setSearchOpen(true);
-                      if (e.target.value.trim()) setIsLoading(true);
-                    }}
-                    onKeyDown={handleKeyDown}
-                    onFocus={() => setSearchOpen(true)}
-                    placeholder={t('search.placeholder')}
-                    className={cn(
-                      "h-10 w-64 pl-9 pr-3 rounded-lg bg-muted/50 border border-border/50 text-sm",
-                      "placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
-                      "transition-all duration-200"
-                    )}
-                  />
+                  <div className={cn(
+                    "relative flex items-center",
+                    "rounded-xl border transition-all duration-200",
+                    searchFocused 
+                      ? "border-primary/50 bg-background shadow-lg shadow-primary/10" 
+                      : "border-border/40 bg-muted/40 hover:bg-muted/60 hover:border-border/60"
+                  )}>
+                    <Search className={cn(
+                      "absolute left-3 h-4 w-4 pointer-events-none transition-colors duration-200",
+                      searchFocused ? "text-primary" : "text-muted-foreground"
+                    )} />
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      value={query}
+                      onChange={(e) => {
+                        setQuery(e.target.value);
+                        setSearchOpen(true);
+                        if (e.target.value.trim()) setIsLoading(true);
+                      }}
+                      onKeyDown={handleKeyDown}
+                      onFocus={() => {
+                        setSearchOpen(true);
+                        setSearchFocused(true);
+                      }}
+                      onBlur={() => setSearchFocused(false)}
+                      placeholder={t('search.placeholder')}
+                      className={cn(
+                        "h-10 w-56 xl:w-64 pl-9 pr-16 bg-transparent text-sm",
+                        "placeholder:text-muted-foreground/70",
+                        "focus:outline-none",
+                        "transition-all duration-200"
+                      )}
+                    />
+                    {/* Keyboard shortcut hint */}
+                    <div className={cn(
+                      "absolute right-2 flex items-center gap-1 pointer-events-none",
+                      "text-[10px] text-muted-foreground/60",
+                      searchFocused && "opacity-0"
+                    )}>
+                      <kbd className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted/80 border border-border/50 font-medium">
+                        <Command className="h-2.5 w-2.5" />
+                        <span>K</span>
+                      </kbd>
+                    </div>
+                  </div>
                   <SearchDropdown
                     query={query}
                     results={results}
@@ -225,23 +288,23 @@ const Header = () => {
                     onSelect={handleSelect}
                     focusedIndex={focusedIndex}
                     onFocusChange={setFocusedIndex}
-                    className="w-[400px] left-[calc(50%-200px)]"
+                    className="w-[420px] left-1/2 -translate-x-1/2"
                     recentSearches={recentSearches}
-                    onRecentSearchClick={(search) => {
-                      setQuery(search);
-                      addSearch(search);
-                      setSearchOpen(false);
-                      navigate(`/search?q=${encodeURIComponent(search)}`);
-                    }}
+                    onRecentSearchClick={handleRecentSearchSelect}
                     onClearRecentSearches={clearSearches}
                     onRemoveRecentSearch={removeSearch}
                   />
                 </div>
 
+                {/* Mobile Search Button - Premium Style */}
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="lg:hidden min-h-[44px] min-w-[44px]"
+                  className={cn(
+                    "lg:hidden min-h-[44px] min-w-[44px] rounded-xl",
+                    "hover:bg-primary/10 hover:text-primary",
+                    "transition-all duration-200"
+                  )}
                   onClick={() => navigate('/search')}
                   aria-label="Open search"
                 >

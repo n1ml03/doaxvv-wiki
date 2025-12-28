@@ -40,7 +40,7 @@ export interface IndexedSearchResult {
   subtitle?: string;
   image?: string;
   badge?: string;
-  badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline';
+  badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline' | 'ssr' | 'sr' | 'r';
   url: string;
   // Original data for additional processing
   _original: unknown;
@@ -502,8 +502,8 @@ export class SearchIndexService {
   }
 
   // Badge variant mappings
-  private static readonly BADGE_MAP: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-    SSR: 'default', SR: 'secondary', R: 'outline', N: 'outline',
+  private static readonly BADGE_MAP: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'ssr' | 'sr' | 'r'> = {
+    SSR: 'ssr', SR: 'sr', R: 'r', N: 'outline',
     Active: 'default', Available: 'default', Easy: 'default',
     Upcoming: 'secondary', 'Coming Soon': 'secondary', Medium: 'secondary',
     Ended: 'destructive', Limited: 'destructive', Hard: 'destructive',
@@ -513,8 +513,8 @@ export class SearchIndexService {
     return SearchIndexService.BADGE_MAP[value] || fallback;
   }
 
-  private getRarityBadgeVariant(r: string) { return this.getBadge(r) as 'default' | 'secondary' | 'outline'; }
-  private getItemRarityBadgeVariant(r: string) { return this.getBadge(r) as 'default' | 'secondary' | 'outline'; }
+  private getRarityBadgeVariant(r: string) { return this.getBadge(r) as 'ssr' | 'sr' | 'r' | 'outline'; }
+  private getItemRarityBadgeVariant(r: string) { return this.getBadge(r) as 'ssr' | 'sr' | 'r' | 'outline'; }
   private getEventStatusBadgeVariant(s: string) { return this.getBadge(s, 'destructive') as 'default' | 'secondary' | 'destructive'; }
   private getGachaStatusBadgeVariant(s: string) { return this.getBadge(s, 'destructive') as 'default' | 'secondary' | 'destructive'; }
   private getDifficultyBadgeVariant(d: string) { return this.getBadge(d, 'destructive') as 'default' | 'secondary' | 'destructive'; }

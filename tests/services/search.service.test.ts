@@ -14,8 +14,27 @@ vi.mock('../../src/content/loader', () => ({
     getGuides: vi.fn(),
     getItems: vi.fn(),
     getEpisodes: vi.fn(),
+    getTools: vi.fn(),
+    getAccessories: vi.fn(),
+    getMissions: vi.fn(),
+    getQuizzes: vi.fn(),
   },
 }));
+
+// Helper to set up default empty mocks for all content types
+function setupEmptyMocks() {
+  vi.mocked(contentLoader.getCharacters).mockReturnValue([]);
+  vi.mocked(contentLoader.getSwimsuits).mockReturnValue([]);
+  vi.mocked(contentLoader.getEvents).mockReturnValue([]);
+  vi.mocked(contentLoader.getGachas).mockReturnValue([]);
+  vi.mocked(contentLoader.getGuides).mockReturnValue([]);
+  vi.mocked(contentLoader.getItems).mockReturnValue([]);
+  vi.mocked(contentLoader.getEpisodes).mockReturnValue([]);
+  vi.mocked(contentLoader.getTools).mockReturnValue([]);
+  vi.mocked(contentLoader.getAccessories).mockReturnValue([]);
+  vi.mocked(contentLoader.getMissions).mockReturnValue([]);
+  vi.mocked(contentLoader.getQuizzes).mockReturnValue([]);
+}
 
 describe('SearchService', () => {
   let searchService: SearchService;
@@ -83,12 +102,8 @@ describe('SearchService', () => {
       ];
 
       vi.mocked(contentLoader.getCharacters).mockReturnValue(mockCharacters);
-      vi.mocked(contentLoader.getSwimsuits).mockReturnValue([]);
-      vi.mocked(contentLoader.getEvents).mockReturnValue([]);
-      vi.mocked(contentLoader.getGachas).mockReturnValue([]);
-      vi.mocked(contentLoader.getGuides).mockReturnValue([]);
-      vi.mocked(contentLoader.getItems).mockReturnValue([]);
-      vi.mocked(contentLoader.getEpisodes).mockReturnValue([]);
+      setupEmptyMocks();
+      vi.mocked(contentLoader.getCharacters).mockReturnValue(mockCharacters);
     });
 
     it('should find characters by English name', () => {
@@ -162,13 +177,8 @@ describe('SearchService', () => {
         } as unknown as Guide,
       ];
 
-      vi.mocked(contentLoader.getCharacters).mockReturnValue([]);
-      vi.mocked(contentLoader.getSwimsuits).mockReturnValue([]);
-      vi.mocked(contentLoader.getEvents).mockReturnValue([]);
-      vi.mocked(contentLoader.getGachas).mockReturnValue([]);
+      setupEmptyMocks();
       vi.mocked(contentLoader.getGuides).mockReturnValue(mockGuides);
-      vi.mocked(contentLoader.getItems).mockReturnValue([]);
-      vi.mocked(contentLoader.getEpisodes).mockReturnValue([]);
     });
 
     it('should find guides by title', () => {
@@ -216,13 +226,8 @@ describe('SearchService', () => {
         } as unknown as Event,
       ];
 
-      vi.mocked(contentLoader.getCharacters).mockReturnValue([]);
-      vi.mocked(contentLoader.getSwimsuits).mockReturnValue([]);
+      setupEmptyMocks();
       vi.mocked(contentLoader.getEvents).mockReturnValue(mockEvents);
-      vi.mocked(contentLoader.getGachas).mockReturnValue([]);
-      vi.mocked(contentLoader.getGuides).mockReturnValue([]);
-      vi.mocked(contentLoader.getItems).mockReturnValue([]);
-      vi.mocked(contentLoader.getEpisodes).mockReturnValue([]);
     });
 
     it('should find events by name', () => {
@@ -278,13 +283,9 @@ describe('SearchService', () => {
         } as unknown as Guide,
       ];
 
+      setupEmptyMocks();
       vi.mocked(contentLoader.getCharacters).mockReturnValue(mockCharacters);
-      vi.mocked(contentLoader.getSwimsuits).mockReturnValue([]);
-      vi.mocked(contentLoader.getEvents).mockReturnValue([]);
-      vi.mocked(contentLoader.getGachas).mockReturnValue([]);
       vi.mocked(contentLoader.getGuides).mockReturnValue(mockGuides);
-      vi.mocked(contentLoader.getItems).mockReturnValue([]);
-      vi.mocked(contentLoader.getEpisodes).mockReturnValue([]);
     });
 
     it('should search across multiple content types', () => {
@@ -329,13 +330,8 @@ describe('SearchService', () => {
         } as unknown as Character,
       ];
 
+      setupEmptyMocks();
       vi.mocked(contentLoader.getCharacters).mockReturnValue(mockCharacters);
-      vi.mocked(contentLoader.getSwimsuits).mockReturnValue([]);
-      vi.mocked(contentLoader.getEvents).mockReturnValue([]);
-      vi.mocked(contentLoader.getGachas).mockReturnValue([]);
-      vi.mocked(contentLoader.getGuides).mockReturnValue([]);
-      vi.mocked(contentLoader.getItems).mockReturnValue([]);
-      vi.mocked(contentLoader.getEpisodes).mockReturnValue([]);
     });
 
     it('should search in English by default', () => {
@@ -380,13 +376,8 @@ describe('SearchService', () => {
         } as unknown as Character,
       ];
 
+      setupEmptyMocks();
       vi.mocked(contentLoader.getCharacters).mockReturnValue(mockCharacters);
-      vi.mocked(contentLoader.getSwimsuits).mockReturnValue([]);
-      vi.mocked(contentLoader.getEvents).mockReturnValue([]);
-      vi.mocked(contentLoader.getGachas).mockReturnValue([]);
-      vi.mocked(contentLoader.getGuides).mockReturnValue([]);
-      vi.mocked(contentLoader.getItems).mockReturnValue([]);
-      vi.mocked(contentLoader.getEpisodes).mockReturnValue([]);
     });
 
     it('should handle hyphenated names', () => {
@@ -435,13 +426,8 @@ describe('SearchService', () => {
         author: 'admin',
       } as unknown as Character));
 
+      setupEmptyMocks();
       vi.mocked(contentLoader.getCharacters).mockReturnValue(mockCharacters);
-      vi.mocked(contentLoader.getSwimsuits).mockReturnValue([]);
-      vi.mocked(contentLoader.getEvents).mockReturnValue([]);
-      vi.mocked(contentLoader.getGachas).mockReturnValue([]);
-      vi.mocked(contentLoader.getGuides).mockReturnValue([]);
-      vi.mocked(contentLoader.getItems).mockReturnValue([]);
-      vi.mocked(contentLoader.getEpisodes).mockReturnValue([]);
     });
 
     it('should respect maxPerType limit with many results', () => {

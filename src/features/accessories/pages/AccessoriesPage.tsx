@@ -147,16 +147,15 @@ const AccessoriesPage = () => {
             renderItem={(accessory, index) => (
               <Link to={`/accessories/${accessory.unique_key}`}>
                 <Card
-                  className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-2 animate-fade-in h-full"
-                  style={{ animationDelay: `${Math.min(index, 8) * 0.03}s` }}
+                  className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-200 hover:-translate-y-0.5 h-full"
                 >
                   <div className="relative aspect-square overflow-hidden">
                     <DatasetImage
                       src={accessory.image}
                       alt={getLocalizedValue(accessory.name, currentLanguage)}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                     
                     <div className="absolute top-3 left-3 flex flex-col gap-2">
                       <Badge className={getRarityColor(accessory.rarity)}>

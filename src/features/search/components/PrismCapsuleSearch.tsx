@@ -51,7 +51,7 @@ function ShimmerEffect({ isActive }: ShimmerEffectProps) {
 
 /**
  * GlowBorder Sub-component
- * Animated gradient border for focus states (SSR = Gold/Pink/Cyan).
+ * Animated gradient border for focus states (SSR = Blue/Pink/Cyan).
  */
 interface GlowBorderProps {
   isActive: boolean;
@@ -62,7 +62,7 @@ function GlowBorder({ isActive, gradient = 'ssr' }: GlowBorderProps) {
   if (!isActive) return null;
 
   const gradientClass = gradient === 'ssr' 
-    ? 'bg-gradient-to-r from-amber-400 via-pink-500 to-cyan-400'
+    ? 'bg-gradient-to-r from-blue-400 via-pink-500 to-cyan-400'
     : 'bg-gradient-to-r from-amber-300 via-orange-400 to-rose-400';
 
   return (
@@ -92,15 +92,15 @@ function GlowBorder({ isActive, gradient = 'ssr' }: GlowBorderProps) {
  * Glossy gradient search button styled as a liquid droplet or jewel.
  */
 interface JewelButtonProps {
-  onClick: () => void;
+  onMouseDown: (e: React.MouseEvent) => void;
   isFocused: boolean;
 }
 
-function JewelButton({ onClick, isFocused }: JewelButtonProps) {
+function JewelButton({ onMouseDown, isFocused }: JewelButtonProps) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onMouseDown={onMouseDown}
       className={cn(
         "relative h-10 sm:h-12 px-4 sm:px-6 mr-2 rounded-full",
         "bg-primary hover:bg-primary/90",
@@ -233,11 +233,13 @@ export function PrismCapsuleSearch({
     navigate(result.url);
   }, [navigate]);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback((e?: React.MouseEvent) => {
+    // Prevent the input from losing focus when clicking the button
+    e?.preventDefault();
     if (query.trim()) {
-      setIsOpen(false);
       onSearch?.(query);
       navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      setIsOpen(false);
     }
   }, [query, navigate, onSearch]);
 
@@ -389,7 +391,7 @@ export function PrismCapsuleSearch({
           />
           
           {/* Jewel Button (Requirements 2.5) */}
-          <JewelButton onClick={handleSubmit} isFocused={isFocused} />
+          <JewelButton onMouseDown={handleSubmit} isFocused={isFocused} />
         </div>
         
         {/* Search Dropdown */}

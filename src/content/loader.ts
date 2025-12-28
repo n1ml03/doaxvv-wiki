@@ -67,20 +67,27 @@ const DEFAULT_CONFIG: Required<ContentLoaderConfig> = {
 // Re-export Festival type for lookup map
 type FestivalType = Festival;
 
-// Import CSV files as raw text
-import guidesCSV from './data/guides.csv?raw';
-import charactersCSV from './data/characters.csv?raw';
-import eventsCSV from './data/events.csv?raw';
-import swimsuitsCSV from './data/swimsuits.csv?raw';
-import itemsCSV from './data/items.csv?raw';
-import categoriesCSV from './data/categories.csv?raw';
-import tagsCSV from './data/tags.csv?raw';
-import gachasCSV from './data/gachas.csv?raw';
-import episodesCSV from './data/episodes.csv?raw';
-import toolsCSV from './data/tools.csv?raw';
-import accessoriesCSV from './data/accessories.csv?raw';
-import missionsCSV from './data/missions.csv?raw';
-import quizzesCSV from './data/quizzes.csv?raw';
+/**
+ * Dynamic CSV imports for code splitting
+ * Each CSV is loaded on-demand, creating separate chunks
+ */
+const csvImports = {
+  guides: () => import('./data/guides.csv?raw').then(m => m.default),
+  characters: () => import('./data/characters.csv?raw').then(m => m.default),
+  events: () => import('./data/events.csv?raw').then(m => m.default),
+  swimsuits: () => import('./data/swimsuits.csv?raw').then(m => m.default),
+  items: () => import('./data/items.csv?raw').then(m => m.default),
+  categories: () => import('./data/categories.csv?raw').then(m => m.default),
+  tags: () => import('./data/tags.csv?raw').then(m => m.default),
+  gachas: () => import('./data/gachas.csv?raw').then(m => m.default),
+  episodes: () => import('./data/episodes.csv?raw').then(m => m.default),
+  tools: () => import('./data/tools.csv?raw').then(m => m.default),
+  accessories: () => import('./data/accessories.csv?raw').then(m => m.default),
+  missions: () => import('./data/missions.csv?raw').then(m => m.default),
+  quizzes: () => import('./data/quizzes.csv?raw').then(m => m.default),
+} as const;
+
+type CSVKey = keyof typeof csvImports;
 
 /** Create LocalizedString from CSV fields with _en, _jp, _cn, _tw, _kr suffixes */
 export function createLocalizedStringFromCSV(raw: any, fieldName: string): LocalizedString {
@@ -697,39 +704,6 @@ export class ContentLoader {
   }
 
   /**
-   * Unified content loading method with caching and deduplication
-   */
-  private async loadContent<T>(
-    key: string,
-    csvContent: string,
-    transformer: (raw: Record<string, string>) => T
-  ): Promise<T[]> {
-    // Check cache first (including IndexedDB)
-    const cached = await this.getCachedAsync<T>(key);
-    if (cached) {
-      if (this.config.debug) console.log(`[ContentLoader] Cache hit: ${key}`);
-      return cached;
-    }
-
-    // Deduplicate concurrent requests
-    if (this.pendingRequests.has(key)) {
-      return this.pendingRequests.get(key) as Promise<T[]>;
-    }
-
-    // Create the loading promise
-    const promise = this.parseAndTransform(key, csvContent, transformer);
-    this.pendingRequests.set(key, promise);
-
-    try {
-      const data = await promise;
-      this.setCache(key, data);
-      return data;
-    } finally {
-      this.pendingRequests.delete(key);
-    }
-  }
-
-  /**
    * Parse CSV content and transform to typed objects
    * Uses chunked parsing for large datasets to avoid blocking UI
    */
@@ -810,27 +784,50 @@ export class ContentLoader {
     ]);
   }
 
-  /** Generic loader with automatic lookup map building */
-  private async loadWithMaps<T extends { unique_key: string; id: number }>(
-    type: string,
-    csv: string,
+  /** Generic loader with dynamic CSV import and automatic lookup map building */
+  private async loadWithDynamicImport<T extends { unique_key: string; id: number }>(
+    type: CSVKey,
     transformer: (raw: Record<string, string>) => T
   ): Promise<T[]> {
-    const data = await this.loadContent(type, csv, transformer);
-    this.buildLookupMaps(type, data);
-    return data;
+    // Check cache first
+    const cached = await this.getCachedAsync<T>(type);
+    if (cached) {
+      if (this.config.debug) console.log(`[ContentLoader] Cache hit: ${type}`);
+      return cached;
+    }
+
+    // Deduplicate concurrent requests
+    if (this.pendingRequests.has(type)) {
+      return this.pendingRequests.get(type) as Promise<T[]>;
+    }
+
+    // Dynamic import + parse
+    const promise = (async () => {
+      const csv = await csvImports[type]();
+      const data = await this.parseAndTransform(type, csv, transformer);
+      this.buildLookupMaps(type, data);
+      this.setCache(type, data);
+      return data;
+    })();
+
+    this.pendingRequests.set(type, promise);
+    try {
+      return await promise;
+    } finally {
+      this.pendingRequests.delete(type);
+    }
   }
 
   async loadCharacters(): Promise<Character[]> {
-    return this.loadWithMaps('characters', charactersCSV, transformCharacter);
+    return this.loadWithDynamicImport('characters', transformCharacter);
   }
 
   async loadGuides(): Promise<Guide[]> {
-    return this.loadWithMaps('guides', guidesCSV, transformGuide);
+    return this.loadWithDynamicImport('guides', transformGuide);
   }
 
   async loadEvents(): Promise<Event[]> {
-    const events = await this.loadWithMaps('events', eventsCSV, transformEvent);
+    const events = await this.loadWithDynamicImport('events', transformEvent);
     // Cache festivals (events with type 'Main')
     if (!this.getCached<Festival>('festivals')) {
       const festivals = events.filter((e: Event) => e.type === 'Main') as FestivalType[];
@@ -842,27 +839,27 @@ export class ContentLoader {
   }
 
   async loadSwimsuits(): Promise<Swimsuit[]> {
-    return this.loadWithMaps('swimsuits', swimsuitsCSV, transformSwimsuit);
+    return this.loadWithDynamicImport('swimsuits', transformSwimsuit);
   }
 
   async loadItems(): Promise<Item[]> {
-    return this.loadWithMaps('items', itemsCSV, transformItem);
+    return this.loadWithDynamicImport('items', transformItem);
   }
 
   async loadEpisodes(): Promise<Episode[]> {
-    return this.loadWithMaps('episodes', episodesCSV, transformEpisode);
+    return this.loadWithDynamicImport('episodes', transformEpisode);
   }
 
   async loadGachas(): Promise<Gacha[]> {
-    return this.loadWithMaps('gachas', gachasCSV, transformGacha);
+    return this.loadWithDynamicImport('gachas', transformGacha);
   }
 
   async loadCategories(): Promise<Category[]> {
-    return this.loadWithMaps('categories', categoriesCSV, transformCategory);
+    return this.loadWithDynamicImport('categories', transformCategory);
   }
 
   async loadTags(): Promise<Tag[]> {
-    return this.loadWithMaps('tags', tagsCSV, transformTag);
+    return this.loadWithDynamicImport('tags', transformTag);
   }
 
   async loadFestivals(): Promise<Festival[]> {
@@ -871,19 +868,19 @@ export class ContentLoader {
   }
 
   async loadTools(): Promise<Tool[]> {
-    return this.loadWithMaps('tools', toolsCSV, transformTool);
+    return this.loadWithDynamicImport('tools', transformTool);
   }
 
   async loadAccessories(): Promise<Accessory[]> {
-    return this.loadWithMaps('accessories', accessoriesCSV, transformAccessory);
+    return this.loadWithDynamicImport('accessories', transformAccessory);
   }
 
   async loadMissions(): Promise<Mission[]> {
-    return this.loadWithMaps('missions', missionsCSV, transformMission);
+    return this.loadWithDynamicImport('missions', transformMission);
   }
 
   async loadQuizzes(): Promise<Quiz[]> {
-    return this.loadWithMaps('quizzes', quizzesCSV, transformQuiz);
+    return this.loadWithDynamicImport('quizzes', transformQuiz);
   }
 
 

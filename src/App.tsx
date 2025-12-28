@@ -64,6 +64,7 @@ const QuizDetailPage = lazy(() => import("@/features/quiz").then(m => ({ default
 const QuizTakingPage = lazy(() => import("@/features/quiz").then(m => ({ default: m.QuizTakingPage })));
 const QuizResultPage = lazy(() => import("@/features/quiz").then(m => ({ default: m.QuizResultPage })));
 const SearchResultsPage = lazy(() => import("@/features/search").then(m => ({ default: m.SearchResultsPage })));
+const ChangelogPage = lazy(() => import("@/features/changelog").then(m => ({ default: m.ChangelogPage })));
 const NotFoundPage = lazy(() => import("@/shared/pages").then(m => ({ default: m.NotFoundPage })));
 
 // Loading fallback component
@@ -132,6 +133,7 @@ const router = createBrowserRouter([
       { path: "/quizzes/:unique_key/take", element: <QuizTakingPage />, loader: quizDetailLoader },
       { path: "/quizzes/:unique_key/result", element: <QuizResultPage /> },
       { path: "/search", element: <SearchResultsPage /> },
+      { path: "/changelog", element: <ChangelogPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

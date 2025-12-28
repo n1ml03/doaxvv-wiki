@@ -148,14 +148,13 @@ const EventsPage = () => {
               return (
                 <Link to={`/events/${event.unique_key}`}>
                   <Card
-                    className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 animate-fade-in h-full"
-                    style={{ animationDelay: `${Math.min(index, 8) * 0.03}s` }}
+                    className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-200 hover:-translate-y-0.5 h-full"
                   >
                     <div className="relative aspect-video overflow-hidden">
                       <DatasetImage
                         src={event.image}
                         alt={event.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                       <div className="absolute top-3 left-3 flex gap-2">

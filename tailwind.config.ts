@@ -79,9 +79,18 @@ export default {
         tec: "hsl(var(--tec))",
         stm: "hsl(var(--stm))",
         apl: "hsl(var(--apl))",
-        ssr: "hsl(var(--ssr))",
-        sr: "hsl(var(--sr))",
-        r: "hsl(var(--r))",
+        ssr: {
+          DEFAULT: "hsl(var(--ssr))",
+          foreground: "hsl(0 0% 100%)",
+        },
+        sr: {
+          DEFAULT: "hsl(var(--sr))",
+          foreground: "hsl(0 0% 0%)",
+        },
+        r: {
+          DEFAULT: "hsl(var(--r))",
+          foreground: "hsl(0 0% 0%)",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -162,13 +171,20 @@ export default {
       },
       backgroundImage: {
         "gradient-ocean": "var(--gradient-ocean)",
+        "gradient-sunset": "var(--gradient-sunset)",
+        "gradient-ocean-sunset": "var(--gradient-ocean-sunset)",
         "gradient-hero": "var(--gradient-hero)",
-        "gradient-card": "var(--gradient-card)"
+        "gradient-hero-overlay": "var(--gradient-hero-overlay)",
+        "gradient-card": "var(--gradient-card)",
+        "gradient-card-hover": "var(--gradient-card-hover)",
+        "gradient-glass": "var(--gradient-glass)"
       },
       boxShadow: {
         "soft": "var(--shadow-soft)",
         "card": "var(--shadow-card)",
-        "hover": "var(--shadow-hover)"
+        "hover": "var(--shadow-hover)",
+        "glow-primary": "var(--shadow-glow-primary)",
+        "glow-secondary": "var(--shadow-glow-secondary)"
       }
     },
   },

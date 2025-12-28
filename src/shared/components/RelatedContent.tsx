@@ -41,12 +41,12 @@ const RelatedContent = ({ title, items, viewAllHref, viewAllLabel = "View All" }
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {items.slice(0, 4).map((item) => (
           <Link key={item.id} to={item.href}>
-            <Card className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 h-full">
+            <Card className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-200 hover:-translate-y-0.5 h-full">
               <div className="relative aspect-[4/3] overflow-hidden">
                 <DatasetImage
                   src={item.image}
                   alt={item.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 {item.badge && (
                   <Badge className="absolute top-2 right-2 bg-accent text-accent-foreground text-xs">

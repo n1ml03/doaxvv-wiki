@@ -286,7 +286,7 @@ export interface SearchResult {
   subtitle?: string;
   image: string;
   badge?: string;
-  badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline';
+  badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline' | 'ssr' | 'sr' | 'r';
   url: string;
 }
 
@@ -911,9 +911,9 @@ export class SearchService {
   }
 
   /** Badge variant mappings */
-  private static readonly BADGE_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  private static readonly BADGE_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'ssr' | 'sr' | 'r'> = {
     // Rarity
-    SSR: 'default', SR: 'secondary', R: 'outline', N: 'outline',
+    SSR: 'ssr', SR: 'sr', R: 'r', N: 'outline',
     // Status
     Active: 'default', Available: 'default',
     Upcoming: 'secondary', 'Coming Soon': 'secondary',
@@ -922,12 +922,12 @@ export class SearchService {
     Easy: 'default', Medium: 'secondary', Hard: 'destructive',
   };
 
-  private getBadgeVariant(value: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+  private getBadgeVariant(value: string): 'default' | 'secondary' | 'destructive' | 'outline' | 'ssr' | 'sr' | 'r' {
     return SearchService.BADGE_VARIANTS[value] || 'outline';
   }
 
-  private getRarityBadgeVariant(rarity: string) { return this.getBadgeVariant(rarity) as 'default' | 'secondary' | 'outline'; }
-  private getItemRarityBadgeVariant(rarity: string) { return this.getBadgeVariant(rarity) as 'default' | 'secondary' | 'outline'; }
+  private getRarityBadgeVariant(rarity: string) { return this.getBadgeVariant(rarity) as 'ssr' | 'sr' | 'r' | 'outline'; }
+  private getItemRarityBadgeVariant(rarity: string) { return this.getBadgeVariant(rarity) as 'ssr' | 'sr' | 'r' | 'outline'; }
   private getEventStatusBadgeVariant(status: string) { return this.getBadgeVariant(status) as 'default' | 'secondary' | 'destructive'; }
   private getGachaStatusBadgeVariant(status: string) { return this.getBadgeVariant(status) as 'default' | 'secondary' | 'destructive'; }
   private getDifficultyBadgeVariant(difficulty: string) { return this.getBadgeVariant(difficulty) as 'default' | 'secondary' | 'destructive'; }

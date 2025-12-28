@@ -5,8 +5,9 @@ import { useTranslation } from "@/shared/hooks/useTranslation";
 const Hero = () => {
   const { t } = useTranslation();
   return (
-    <section className="relative z-20 mx-4 md:mx-8 mt-8 shadow-card rounded-3xl">
-      <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+    <section className="relative z-20 mx-4 md:mx-8 mt-8">
+      {/* Background container with overflow-hidden for rounded corners */}
+      <div className="absolute inset-0 rounded-3xl overflow-hidden shadow-card pointer-events-none">
         <img 
           src={heroBeach} 
           alt={t('hero.altText')} 
@@ -16,7 +17,7 @@ const Hero = () => {
         <div className="absolute inset-0 bg-gradient-hero" />
       </div>
       
-      <div className="relative h-[400px] md:h-[500px] flex items-center justify-center">
+      <div className="relative h-[400px] md:h-[500px] flex items-center justify-center rounded-3xl">
         <div className="relative z-10 text-center px-4 max-w-3xl mx-auto animate-fade-in">
           <p className="text-2xl md:text-3xl lg:text-4xl text-white/95 mb-3 drop-shadow-lg font-semibold tracking-wide">
             {t('hero.welcomeTo')}
