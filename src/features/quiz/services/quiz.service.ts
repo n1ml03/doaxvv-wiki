@@ -60,31 +60,33 @@ export async function getQuizByKeyAsync(uniqueKey: string): Promise<Quiz | undef
   return quizzesByKey.get(uniqueKey);
 }
 
+// Import all quiz question markdown files as raw text (eager loading)
+const questionModules = import.meta.glob('@/content/data/quizzes/*.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>;
+
 /**
  * Load questions from a markdown file reference
  * @param questionsRef - Path to the markdown file (e.g., "quizzes/doax-basics.md")
  */
 export async function loadQuestions(questionsRef: string): Promise<Question[]> {
   try {
-    // Dynamic import of markdown files from the quizzes directory
-    const modules = import.meta.glob('/src/content/data/quizzes/*.md', { 
-      query: '?raw',
-      import: 'default' 
-    });
+    // Extract just the filename from the questionsRef
+    const filename = questionsRef.includes('/') 
+      ? questionsRef.split('/').pop() 
+      : questionsRef;
     
-    // Normalize the path to match the glob pattern
-    const normalizedPath = questionsRef.startsWith('quizzes/') 
-      ? `/src/content/data/${questionsRef}`
-      : `/src/content/data/quizzes/${questionsRef}`;
+    // Find the matching module by filename
+    const moduleKey = Object.keys(questionModules).find(key => key.endsWith(`/${filename}`));
     
-    const loader = modules[normalizedPath];
-    
-    if (!loader) {
+    if (!moduleKey) {
       console.warn(`Question file not found: ${questionsRef}`);
       return [];
     }
 
-    const markdownContent = await loader() as string;
+    const markdownContent = questionModules[moduleKey];
     const result = parseQuestionMarkdown(markdownContent);
     return getValidQuestions(result);
   } catch (error) {

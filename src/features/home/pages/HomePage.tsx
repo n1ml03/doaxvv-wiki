@@ -11,14 +11,14 @@ import { ResponsiveContainer } from "@/shared/components/responsive";
 import { ScrollToTop } from "@/shared/components";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
-import { Sparkles, Users, BookOpen, Calendar, Gift, Star, ArrowRight } from "lucide-react";
+import { Shirt, Users, BookOpen, Calendar, Gift, Star, ArrowRight } from "lucide-react";
 import { contentLoader } from "@/content";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 import { useDocumentTitle } from "@/shared/hooks/useDocumentTitle";
 
 const STATS_CONFIG = [
   { key: "characters", icon: Users, gradient: "from-primary to-primary/70", link: "/girls" },
-  { key: "swimsuits", icon: Sparkles, gradient: "from-secondary to-secondary/70", link: "/swimsuits" },
+  { key: "swimsuits", icon: Shirt, gradient: "from-secondary to-secondary/70", link: "/swimsuits" },
   { key: "activeEvents", icon: Calendar, gradient: "from-ssr to-cyan-400", link: "/events" },
   { key: "guides", icon: BookOpen, gradient: "from-stm to-emerald-400", link: "/guides" },
 ];
@@ -148,7 +148,7 @@ const HomePage = () => {
                   </Link>
                   <Link to="/swimsuits">
                     <Button variant="outline" className="w-full justify-start h-11 sm:h-12 text-sm sm:text-base hover:border-apl/50 hover:bg-apl/5 transition-colors">
-                      <Sparkles className="h-4 w-4 mr-2 text-apl" />
+                      <Shirt className="h-4 w-4 mr-2 text-apl" />
                       {t('home.quickLinks.swimsuitCollection')}
                     </Button>
                   </Link>

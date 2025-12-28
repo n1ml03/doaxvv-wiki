@@ -39,8 +39,6 @@ import {
   XCircle,
   SkipForward,
   Flag,
-  Volume2,
-  VolumeX,
   Bookmark,
   Zap,
   Keyboard,
@@ -48,7 +46,6 @@ import {
 import { useQuiz } from '../hooks/useQuiz';
 import { useQuizSession } from '../hooks/useQuizSession';
 import { useQuizResults } from '../hooks/useQuizResults';
-import { useQuizSound } from '../hooks/useQuizSound';
 import type { QuizResult } from '../types';
 import { useLanguage } from '@/shared/contexts/language-hooks';
 import { getLocalizedValue } from '@/shared/utils/localization';
@@ -209,17 +206,6 @@ const QuizTakingPage = () => {
   const { quiz, questions, isLoading, error } = useQuiz(unique_key);
   const { saveQuizResult } = useQuizResults();
 
-  // Sound effects hook
-  const {
-    playCorrect,
-    playIncorrect,
-    playTimeWarning,
-    playTimeUp,
-    playComplete,
-    isMuted,
-    toggleMuted,
-  } = useQuizSound();
-
   // Local state for answer selection
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [textAnswer, setTextAnswer] = useState('');
@@ -240,9 +226,6 @@ const QuizTakingPage = () => {
   const [showTimeBonus, setShowTimeBonus] = useState(false);
   const [lastAnswerTime, setLastAnswerTime] = useState(0);
 
-  // Track if warning sound has been played for current timer
-  const warningPlayedRef = useRef(false);
-  const timeUpPlayedRef = useRef(false);
   const questionStartTimeRef = useRef(Date.now());
 
   // Quiz session hook
@@ -265,17 +248,14 @@ const QuizTakingPage = () => {
     username: 'Player',
     onComplete: (quizResult: QuizResult) => {
       saveQuizResult(quizResult);
-      playComplete();
     },
     onTimeout: () => {
       // Quiz timed out
       setIsTimeUp(true);
-      playTimeUp();
     },
     onQuestionTimeout: () => {
       // Question timed out - auto skip
       setIsTimeUp(true);
-      playTimeUp();
       setTimeout(() => {
         setSelectedOptions([]);
         setTextAnswer('');
@@ -301,27 +281,8 @@ const QuizTakingPage = () => {
     setIsAnswerCorrect(null);
     setIsTimeUp(false);
     setShowTimeBonus(false);
-    warningPlayedRef.current = false;
-    timeUpPlayedRef.current = false;
     questionStartTimeRef.current = Date.now();
   }, [currentQuestion?.id]);
-
-  // Play warning sound when timer is low (< 5 seconds)
-  useEffect(() => {
-    const checkWarning = (timeRemaining: number) => {
-      if (timeRemaining <= 5 && timeRemaining > 0 && !warningPlayedRef.current) {
-        playTimeWarning();
-        warningPlayedRef.current = true;
-      }
-    };
-
-    if (hasQuizTimeLimit) {
-      checkWarning(quizTimer.timeRemaining);
-    }
-    if (hasQuestionTimeLimit) {
-      checkWarning(questionTimer.timeRemaining);
-    }
-  }, [quizTimer.timeRemaining, questionTimer.timeRemaining, hasQuizTimeLimit, hasQuestionTimeLimit, playTimeWarning]);
 
   // Handle option selection for single choice
   const handleSingleSelect = useCallback((optionId: string) => {
@@ -376,12 +337,11 @@ const QuizTakingPage = () => {
     const timeTaken = Math.round((Date.now() - questionStartTimeRef.current) / 1000);
     setLastAnswerTime(timeTaken);
 
-    // Check if answer is correct and play appropriate sound
+    // Check if answer is correct
     const correct = checkAnswerCorrectness();
     setIsAnswerCorrect(correct);
     
     if (correct) {
-      playCorrect();
       setCorrectCount(prev => prev + 1);
       
       // Show time bonus for fast answers (under 50% of time limit)
@@ -389,8 +349,6 @@ const QuizTakingPage = () => {
       if (timeTaken < timeLimit * 0.5) {
         setShowTimeBonus(true);
       }
-    } else {
-      playIncorrect();
     }
 
     // Show result briefly before moving to next question
@@ -405,7 +363,7 @@ const QuizTakingPage = () => {
       setIsAnswerCorrect(null);
       setShowTimeBonus(false);
     }, 1500); // Slightly longer delay to appreciate the animation
-  }, [currentQuestion, selectedOptions, textAnswer, submitAnswer, checkAnswerCorrectness, playCorrect, playIncorrect, quiz?.time_limit, questions.length]);
+  }, [currentQuestion, selectedOptions, textAnswer, submitAnswer, checkAnswerCorrectness, quiz?.time_limit, questions.length]);
 
   // Handle skip
   const handleSkip = useCallback(() => {
@@ -684,21 +642,6 @@ const QuizTakingPage = () => {
                     label={t('quiz.questionTime') || 'Question Time'}
                   />
                 )}
-                
-                {/* Sound mute toggle */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleMuted}
-                  className="ml-auto"
-                  title={isMuted ? (t('quiz.unmute') || 'Unmute') : (t('quiz.mute') || 'Mute')}
-                >
-                  {isMuted ? (
-                    <VolumeX className="h-4 w-4" />
-                  ) : (
-                    <Volume2 className="h-4 w-4" />
-                  )}
-                </Button>
               </div>
             </div>
 
